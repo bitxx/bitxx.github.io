@@ -3480,7 +3480,6 @@ pallet的lib.rs中</p>
       <categories>
         <category>区块链</category>
         <category>Aleo</category>
-        <category>基础</category>
       </categories>
       <tags>
         <tag>区块链</tag>
@@ -4565,7 +4564,6 @@ serde_yaml = “0.8”</p>
       <categories>
         <category>区块链</category>
         <category>Aleo</category>
-        <category>基础</category>
       </categories>
       <tags>
         <tag>区块链</tag>
@@ -9316,28 +9314,11 @@ ps: <code>后续根据对lotus的深入了解，会逐步完善本文一些描�
 <figure class="highlight shell"><figcaption><span>script</span></figcaption><table><tr><td class="code"><pre><span class="line">./lotus-miner init --genesis-miner --actor=t01000 --sector-size=2KiB --pre-sealed-sectors=~/.genesis-sectors --pre-sealed-metadata=~/.genesis-sectors/pre-seal-t01000.json --nosync</span><br></pre></td></tr></table></figure>
 <h3 id="执行开挖">执行开挖</h3>
 <p>这一步消耗资源严重，谨慎操作，启动后，一个完整的节点运行案例就形成了。</p>
-<figure class="highlight shell"><figcaption><span>script</span></figcaption><table><tr><td class="code"><pre><span class="line">./lotus-miner run --nosync</span><br></pre></td></tr></table></figure>]]></content>
-      <categories>
-        <category>区块链</category>
-        <category>Lotus</category>
-        <category>应用</category>
-      </categories>
-      <tags>
-        <tag>Filecoin</tag>
-        <tag>Lotus</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>lotus源码解读第1讲-目录结构说明</title>
-    <url>/articles/510314b6/</url>
-    <content><![CDATA[<p>根据个人理解，逐步添加各目录描述。</p>
-<span id="more"></span>
-<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── CHANGELOG.md</span><br><span class="line">├── Dockerfile.lotus    构造容器</span><br><span class="line">├── LICENSE-APACHE</span><br><span class="line">├── LICENSE-MIT</span><br><span class="line">├── Makefile            项目编译文件，可编译获取依赖，生成指定可执行程序等，重点</span><br><span class="line">├── README.md</span><br><span class="line">├── SECURITY.md</span><br><span class="line">├── api                 接口服务</span><br><span class="line">├── build               构建节点的函数（待定）</span><br><span class="line">├── chain               实现与链的交互功能</span><br><span class="line">├── cli                 lotus可执行程序的主要命令，这些命令汇总后，会加入合并到cmd模块下的lotus中</span><br><span class="line">├── cmd                 模块化命令，其中每个文件夹都可以独立编译成一个程序，供独立使用</span><br><span class="line">├── conformance</span><br><span class="line">├── documentation       使用文档</span><br><span class="line">├── extern</span><br><span class="line">├── gen</span><br><span class="line">├── genesis</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── journal</span><br><span class="line">├── lib                 各模块公用的函数</span><br><span class="line">├── lotuspond</span><br><span class="line">├── markets</span><br><span class="line">├── metrics</span><br><span class="line">├── miner               定义产出区块逻辑</span><br><span class="line">├── node                节点实现</span><br><span class="line">├── paychmgr</span><br><span class="line">├── scripts             一些快捷脚本，比如节点部署等</span><br><span class="line">├── storage             定义存储矿工逻辑</span><br><span class="line">├── system</span><br><span class="line">├── testplans</span><br><span class="line">└── tools</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><figcaption><span>script</span></figcaption><table><tr><td class="code"><pre><span class="line">./lotus-miner run --nosync</span><br></pre></td></tr></table></figure>
 ]]></content>
       <categories>
         <category>区块链</category>
         <category>Lotus</category>
-        <category>源码解读</category>
       </categories>
       <tags>
         <tag>Filecoin</tag>
@@ -12894,35 +12875,6 @@ destinations，目的地，可以是一个或者多个合约，如果目的地�
       </tags>
   </entry>
   <entry>
-    <title>(truffle官翻)第3讲 创建项目</title>
-    <url>/articles/39ce2b06/</url>
-    <content><![CDATA[<span id="more"></span>
-<h2 id="概述">概述</h2>
-<p>官方和社区已有项目应用地址：<a href="http://truffleframework.com/boxes/metacoin">http://truffleframework.com/boxes/metacoin</a></p>
-<h2 id="安装">安装</h2>
-<ul>
-<li>从头开始项目建立空项目
-<ol>
-<li>创建和初始化： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> testproject</span><br><span class="line"><span class="built_in">cd</span> testproject</span><br><span class="line">truffle init</span><br></pre></td></tr></table></figure>
-</li>
-<li>目录结构： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">find . -<span class="built_in">print</span> | sed -e <span class="string">&#x27;s;[^/]*/;|____;g;s;____|; |;g’ //mac环境</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>区块链</category>
-        <category>ethereum</category>
-        <category>truffle</category>
-        <category>官翻</category>
-      </categories>
-      <tags>
-        <tag>ethereum</tag>
-        <tag>truffle</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>(truffle官翻)第4讲 选择一个以太坊客户端</title>
     <url>/articles/dbe1bf88/</url>
     <content><![CDATA[<h1>第4讲_选择一个以太坊客户端</h1>
@@ -12967,6 +12919,35 @@ destinations，目的地，可以是一个或者多个合约，如果目的地�
 <li>Ganache 命令行<br>
 略，小编用第二种方式就够了</li>
 </ol>
+]]></content>
+      <categories>
+        <category>区块链</category>
+        <category>ethereum</category>
+        <category>truffle</category>
+        <category>官翻</category>
+      </categories>
+      <tags>
+        <tag>ethereum</tag>
+        <tag>truffle</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>(truffle官翻)第3讲 创建项目</title>
+    <url>/articles/39ce2b06/</url>
+    <content><![CDATA[<span id="more"></span>
+<h2 id="概述">概述</h2>
+<p>官方和社区已有项目应用地址：<a href="http://truffleframework.com/boxes/metacoin">http://truffleframework.com/boxes/metacoin</a></p>
+<h2 id="安装">安装</h2>
+<ul>
+<li>从头开始项目建立空项目
+<ol>
+<li>创建和初始化： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> testproject</span><br><span class="line"><span class="built_in">cd</span> testproject</span><br><span class="line">truffle init</span><br></pre></td></tr></table></figure>
+</li>
+<li>目录结构： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">find . -<span class="built_in">print</span> | sed -e <span class="string">&#x27;s;[^/]*/;|____;g;s;____|; |;g’ //mac环境</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+</ul>
 ]]></content>
       <categories>
         <category>区块链</category>
