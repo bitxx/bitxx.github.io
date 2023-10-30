@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>substrate基础(13)-智能合约初体验 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/substrate/基础/substrate基础(13)-智能合约初体验"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  substrate基础(13)-智能合约初体验
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/5b9fab93/" class="article-date">
+  <time datetime="2022-08-31T05:48:38.000Z" itemprop="datePublished">2022-08-31</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/">Substrate</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/%E5%9F%BA%E7%A1%80/">基础</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">2.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">11 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>初步掌握ink智能合约的使用</p>
+<span id="more"></span>
+<h2 id="1-概述">1. 概述</h2>
+<ol>
+<li>substrate的合约称为ink</li>
+<li>ink！是一种嵌入式领域特定语言，可以用Rust来编写基于webassembly的智能合约。</li>
+<li>ink！实际上是一种使用#[ink(…)]属性宏标准的Rust写法。</li>
+</ol>
+<h2 id="2-准备工作">2. 准备工作</h2>
+<p>下载<code>带有合约功能的节点模板</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/paritytech/substrate-contracts-node</span><br></pre></td></tr></table></figure>
+<p>该节点模板需要编译并启动，这个过程就不在这里阐述了，不是重点。</p>
+<p>为了方便设置substrate智能合约，安装<code>ink！CLI</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"> 先安装依赖工具binaryen</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">For Ubuntu or Debian <span class="built_in">users</span></span></span><br><span class="line">sudo apt install binaryen</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">For MacOS <span class="built_in">users</span></span></span><br><span class="line">brew install binaryen</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">安装合约依赖</span></span><br><span class="line">cargo install dylint-link --force</span><br><span class="line">cargo install cargo-dylint --force</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">再安装lik! cli：</span></span><br><span class="line">cargo install cargo-contract --force</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">或者</span></span><br><span class="line">cargo install cargo-contract --vers ^0.16 --force --locked</span><br></pre></td></tr></table></figure>
+<p>检测是否安装成功</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo contract --help</span><br></pre></td></tr></table></figure>
+<h2 id="3-模板体验">3. 模板体验</h2>
+<h3 id="3-1-创建合约">3.1 创建合约</h3>
+<p>生成合约模板(flipper表示项目名)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo contract new flipper</span><br></pre></td></tr></table></figure>
+<p>执行后，生成一个ink合约项目模板，官方提供了一个类似<code>HelloWorld</code>的案例，可以用其进一步开发合约，也可以立即部署去体验：</p>
+<p>测试合约代码：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cargo test</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">或者</span></span><br><span class="line">cargo +nightly test</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">nocapture表示输出测试详情</span></span><br><span class="line">cargo +nightly test -- --nocapture</span><br></pre></td></tr></table></figure>
+<p>编译合约</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cargo contract build</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">或者</span></span><br><span class="line">cargo +nightly contract build</span><br></pre></td></tr></table></figure>
+<p>编译好后的合约在target目录中<code>flipper/target/ink/</code>，其中包含一个<code>flipper.wasm</code>和<code>flipper.contract文件</code>。<code>.contract文件</code>就是用来部署到链上的合约文件，而<code>wasm文件</code>则包含合约的ABI。</p>
+<h3 id="3-2-部署并体验合约">3.2 部署并体验合约</h3>
+<p>启动节点：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">substrate-contracts-node --dev</span><br></pre></td></tr></table></figure>
+<p>打开<a target="_blank" rel="noopener" href="https://contracts-ui.substrate.io/">合约用户界面</a> 连接节点<br>
+单击“添加新合同”。<br>
+单击上传新合约代码，即上传前面生成的<code>flipper.contract</code>文件</p>
+<p>具体页面上合约的调用比较简单，这里就不详细阐述了</p>
+<h2 id="4-基本语法">4. 基本语法</h2>
+<h3 id="4-1-存储类型">4.1 存储类型</h3>
+<p>substrate合约可以存储使用Parity Codec编码和解码的类型，例如像bool, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, string, 元组，数组等。另外ink！还提供substrate特定类型如AccountId，Balance，Hash等作为原始类型。</p>
+<h3 id="4-2-函数">4.2 函数</h3>
+<ol>
+<li>合约函数</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">    <span class="comment">// Public and Private functions go here</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>构造函数<br>
+每个ink！智能合约必须有在创建时运行一次的构造函数。每个ink！智能合约可以有多个构造函数。构造函数写法如下：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> ink_lang <span class="keyword">as</span> ink;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[ink::contract]</span></span><br><span class="line"><span class="keyword">mod</span> mycontract &#123;</span><br><span class="line">    <span class="meta">#[ink(storage)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">        number: <span class="type">u32</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">        <span class="comment">/// Constructor that initializes the `u32` value to the given `init_value`.</span></span><br><span class="line">        <span class="meta">#[ink(constructor)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(init_value: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">            <span class="keyword">Self</span> &#123;</span><br><span class="line">                number: init_value,</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/// Constructor that initializes the `u32` value to the `u32` default.</span></span><br><span class="line">        <span class="comment">///</span></span><br><span class="line">        <span class="comment">/// Constructors can delegate to other constructors.</span></span><br><span class="line">        <span class="meta">#[ink(constructor)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">default</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">            <span class="keyword">Self</span> &#123;</span><br><span class="line">                number: <span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>(),</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">/* --snip-- */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>公有函数和私有函数</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">    <span class="comment">/// Public function</span></span><br><span class="line">    <span class="meta">#[ink(message)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">my_public_function</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="comment">/* --snip-- */</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Private function</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">my_private_function</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="comment">/* --snip-- */</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* --snip-- */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>获取合约上的值</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">    <span class="meta">#[ink(message)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">my_getter</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">        <span class="keyword">self</span>.number</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li>可变和不可变的函数</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">    <span class="meta">#[ink(message)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">my_getter</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">        <span class="keyword">self</span>.my_number</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[ink(message)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">my_setter</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, new_value: <span class="type">u32</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.my_number = new_value;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="6">
+<li>惰性存储值<br>
+当需要使用的时候，才会被加载，减少gas浪费</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[ink(storage)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">    <span class="comment">// Store some number</span></span><br><span class="line">    my_number: ink_storage::Lazy&lt;<span class="type">u32</span>&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">    <span class="meta">#[ink(constructor)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(init_value: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            my_number: ink_storage::Lazy::&lt;<span class="type">u32</span>&gt;::<span class="title function_ invoke__">new</span>(init_value),</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[ink(message)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">my_setter</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, new_value: <span class="type">u32</span>) &#123;</span><br><span class="line">        ink_storage::Lazy::&lt;<span class="type">u32</span>&gt;::<span class="title function_ invoke__">set</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>.my_number, new_value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[ink(message)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">my_adder</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, add_value: <span class="type">u32</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">my_number</span> = &amp;<span class="keyword">mut</span> <span class="keyword">self</span>.my_number;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">cur</span> = ink_storage::Lazy::&lt;<span class="type">u32</span>&gt;::<span class="title function_ invoke__">get</span>(my_number);</span><br><span class="line">        ink_storage::Lazy::&lt;<span class="type">u32</span>&gt;::<span class="title function_ invoke__">set</span>(my_number, cur + add_value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="7">
+<li>mapping存储<br>
+HashMap</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[ink(storage)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">    <span class="comment">// Store a mapping from AccountIds to a u32</span></span><br><span class="line">    my_number_map: ink_storage::collections::HashMap&lt;AccountId, <span class="type">u32</span>&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>初始化一个HashMap</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"><span class="keyword">use</span> ink_lang <span class="keyword">as</span> ink;</span><br><span class="line"><span class="meta">#[ink::contract]</span></span><br><span class="line"><span class="keyword">mod</span> mycontract &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[ink(storage)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">        <span class="comment">// Store a mapping from AccountIds to a u32</span></span><br><span class="line">        my_number_map: ink_storage::collections::HashMap&lt;AccountId, <span class="type">u32</span>&gt;,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">        <span class="comment">/// Public function.</span></span><br><span class="line">        <span class="comment">/// Default constructor.</span></span><br><span class="line">        <span class="meta">#[ink(constructor)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">default</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">            <span class="keyword">Self</span> &#123;</span><br><span class="line">                my_number_map: <span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>(),</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/// Private function.</span></span><br><span class="line">        <span class="comment">/// Returns the number for an AccountId or 0 if it is not set.</span></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">my_number_or_zero</span>(&amp;<span class="keyword">self</span>, of: &amp;AccountId) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">balance</span> = <span class="keyword">self</span>.my_number_map.<span class="title function_ invoke__">get</span>(of).<span class="title function_ invoke__">unwrap_or</span>(&amp;<span class="number">0</span>);</span><br><span class="line">            *balance</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>修改hash map</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">caller</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">caller</span>();</span><br><span class="line"><span class="keyword">self</span>.my_number_map</span><br><span class="line">    .<span class="title function_ invoke__">entry</span>(caller)</span><br><span class="line">    .<span class="title function_ invoke__">and_modify</span>(|old_value| *old_value += by)</span><br><span class="line">    .<span class="title function_ invoke__">or_insert</span>(by);</span><br></pre></td></tr></table></figure>
+<ol start="9">
+<li>合约调用者</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> ink_lang <span class="keyword">as</span> ink;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[ink::contract]</span></span><br><span class="line"><span class="keyword">mod</span> mycontract &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[ink(storage)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">        <span class="comment">// Store a contract owner</span></span><br><span class="line">        owner: AccountId,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">impl</span> <span class="title class_">MyContract</span> &#123;</span><br><span class="line">        <span class="meta">#[ink(constructor)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">            <span class="keyword">Self</span> &#123;</span><br><span class="line">                owner: <span class="keyword">Self</span>::<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">caller</span>();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/* --snip-- */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4-实现erc20智能合约">4. 实现ERC20智能合约</h2>
+<p>生成合约项目模板(flipper表示项目名)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo contract new erc20</span><br></pre></td></tr></table></figure>
+<p>lib.rs中实现erc20</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> ink_lang <span class="keyword">as</span> ink;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[ink::contract]</span></span><br><span class="line"><span class="keyword">mod</span> erc20 &#123;</span><br><span class="line">    <span class="keyword">use</span> ink_storage::&#123;</span><br><span class="line">        traits::SpreadAllocate,</span><br><span class="line">        Mapping,</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Create storage for a simple ERC-20 contract.</span></span><br><span class="line">    <span class="meta">#[ink(storage)]</span></span><br><span class="line">    <span class="meta">#[derive(SpreadAllocate)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Erc20</span> &#123;</span><br><span class="line">        <span class="comment">/// Total token supply.</span></span><br><span class="line">        total_supply: Balance,</span><br><span class="line">        <span class="comment">/// Mapping from owner to number of owned tokens.</span></span><br><span class="line">        balances: Mapping&lt;AccountId, Balance&gt;,</span><br><span class="line">        allowances: Mapping&lt;(AccountId, AccountId), Balance&gt;,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[ink(event)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Transfer</span> &#123;</span><br><span class="line">        <span class="meta">#[ink(topic)]</span></span><br><span class="line">        from: <span class="type">Option</span>&lt;AccountId&gt;,</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink(topic)]</span></span><br><span class="line">        to: <span class="type">Option</span>&lt;AccountId&gt;,</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink(topic)]</span></span><br><span class="line">        value: Balance,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[ink(event)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Approval</span> &#123;</span><br><span class="line">        <span class="meta">#[ink(topic)]</span></span><br><span class="line">        owner: AccountId,</span><br><span class="line">        <span class="meta">#[ink(topic)]</span></span><br><span class="line">        spender: AccountId,</span><br><span class="line">        <span class="meta">#[ink(topic)]</span></span><br><span class="line">        value: Balance,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">impl</span> <span class="title class_">Erc20</span> &#123;</span><br><span class="line">        <span class="comment">/// Create a new ERC-20 contract with an initial supply.</span></span><br><span class="line">        <span class="meta">#[ink(constructor)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(initial_supply: Balance) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">            <span class="comment">// Initialize mapping for the contract.</span></span><br><span class="line">            ink_lang::utils::<span class="title function_ invoke__">initialize_contract</span>(|contract| &#123;</span><br><span class="line">                <span class="keyword">Self</span>::<span class="title function_ invoke__">new_init</span>(contract, initial_supply)</span><br><span class="line">            &#125;)</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/// Initialize the ERC-20 contract with the specified initial supply.</span></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">new_init</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, initial_supply: Balance) &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">caller</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">caller</span>();</span><br><span class="line">            <span class="keyword">self</span>.balances.<span class="title function_ invoke__">insert</span>(&amp;caller, &amp;initial_supply);</span><br><span class="line">            <span class="keyword">self</span>.total_supply = initial_supply;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">Self</span>::<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">emit_event</span>(Transfer &#123;</span><br><span class="line">                from: <span class="literal">None</span>,</span><br><span class="line">                to: <span class="title function_ invoke__">Some</span>(caller),</span><br><span class="line">                value: initial_supply,</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/// Returns the total token supply.</span></span><br><span class="line">        <span class="meta">#[ink(message)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">total_supply</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> Balance &#123;</span><br><span class="line">            <span class="keyword">self</span>.total_supply</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/// Returns the account balance for the specified `owner`.</span></span><br><span class="line">        <span class="meta">#[ink(message)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">balance_of</span>(&amp;<span class="keyword">self</span>, owner: AccountId) <span class="punctuation">-&gt;</span> Balance &#123;</span><br><span class="line">            <span class="keyword">self</span>.balances.<span class="title function_ invoke__">get</span>(owner).<span class="title function_ invoke__">unwrap_or_default</span>()</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink(message)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">approve</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, spender: AccountId, value: Balance) <span class="punctuation">-&gt;</span> <span class="type">bool</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">owner</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">caller</span>();</span><br><span class="line">            <span class="keyword">self</span>.allowances.<span class="title function_ invoke__">insert</span>((owner, spender), &amp;value);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">self</span>.<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">emit_event</span>(Approval &#123;</span><br><span class="line">                owner,</span><br><span class="line">                spender,</span><br><span class="line">                value,</span><br><span class="line">            &#125;);</span><br><span class="line">            <span class="literal">true</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink(message)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">allowance</span>(&amp;<span class="keyword">self</span>, owner: AccountId, spender: AccountId) <span class="punctuation">-&gt;</span> Balance &#123;</span><br><span class="line">            <span class="keyword">self</span>.<span class="title function_ invoke__">allowance_of_or_zero</span>(&amp;owner, &amp;spender)</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink(message)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">transfer_from</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, from: AccountId, to: AccountId, value: Balance) <span class="punctuation">-&gt;</span> <span class="type">bool</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">caller</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">caller</span>();</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">allowance</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">allowance_of_or_zero</span>(&amp;from, &amp;caller);</span><br><span class="line">            <span class="keyword">if</span> allowance &lt; value &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">transfer_result</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">transfer_from_to</span>(from, to, value);</span><br><span class="line">            <span class="keyword">if</span> !transfer_result &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">self</span>.allowances.<span class="title function_ invoke__">insert</span>((from, caller), &amp;(&amp;allowance - &amp;value));</span><br><span class="line">            <span class="literal">true</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink(message)]</span></span><br><span class="line">        <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">transfer</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, to: AccountId, value: Balance) <span class="punctuation">-&gt;</span> <span class="type">bool</span> &#123;</span><br><span class="line">            <span class="keyword">self</span>.<span class="title function_ invoke__">transfer_from_to</span>(<span class="keyword">self</span>.<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">caller</span>(), to, value)</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">transfer_from_to</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, from: AccountId, to: AccountId, value: Balance) <span class="punctuation">-&gt;</span> <span class="type">bool</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">from_balance</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">balance_of_or_zero</span>(&amp;from);</span><br><span class="line">            <span class="keyword">if</span> from_balance &lt; value &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">self</span>.balances.<span class="title function_ invoke__">insert</span>(from, &amp;(&amp;from_balance - &amp;value));</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">to_balance</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">balance_of_or_zero</span>(&amp;to);</span><br><span class="line">            <span class="keyword">self</span>.balances.<span class="title function_ invoke__">insert</span>(to, &amp;(&amp;to_balance + &amp;value));</span><br><span class="line"></span><br><span class="line">            <span class="keyword">Self</span>::<span class="title function_ invoke__">env</span>().<span class="title function_ invoke__">emit_event</span>(Transfer &#123;</span><br><span class="line">                from: <span class="title function_ invoke__">Some</span>(from),</span><br><span class="line">                to: <span class="title function_ invoke__">Some</span>(to),</span><br><span class="line">                value,</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">            <span class="literal">true</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">balance_of_or_zero</span>(&amp;<span class="keyword">self</span>, owner: &amp;AccountId) <span class="punctuation">-&gt;</span> Balance &#123;</span><br><span class="line">            <span class="keyword">self</span>.balances.<span class="title function_ invoke__">get</span>(owner).<span class="title function_ invoke__">unwrap_or_default</span>()</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">allowance_of_or_zero</span>(&amp;<span class="keyword">self</span>, owner: &amp;AccountId, spender: &amp;AccountId) <span class="punctuation">-&gt;</span> Balance &#123;</span><br><span class="line">            <span class="keyword">self</span>.allowances.<span class="title function_ invoke__">get</span>(&amp;(*owner, *spender)).<span class="title function_ invoke__">unwrap_or_default</span>()</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[cfg(test)]</span></span><br><span class="line">    <span class="keyword">mod</span> tests &#123;</span><br><span class="line">        <span class="keyword">use</span> super::*;</span><br><span class="line">        <span class="keyword">use</span> ink_lang <span class="keyword">as</span> ink;</span><br><span class="line">        <span class="meta">#[ink::test]</span></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">new_works</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">contract</span> = Erc20::<span class="title function_ invoke__">new</span>(<span class="number">888</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">total_supply</span>(), <span class="number">888</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink::test]</span></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">balance_works</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">contract</span> = Erc20::<span class="title function_ invoke__">new</span>(<span class="number">100</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">total_supply</span>(), <span class="number">100</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>])), <span class="number">100</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>])), <span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink::test]</span></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">transfer_works</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">contract</span> = Erc20::<span class="title function_ invoke__">new</span>(<span class="number">100</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>])), <span class="number">100</span>);</span><br><span class="line">            <span class="built_in">assert!</span>(contract.<span class="title function_ invoke__">transfer</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>]), <span class="number">10</span>));</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>])), <span class="number">10</span>);</span><br><span class="line">            <span class="built_in">assert!</span>(!contract.<span class="title function_ invoke__">transfer</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>]), <span class="number">100</span>));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink::test]</span></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">transfer_from_works</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">contract</span> = Erc20::<span class="title function_ invoke__">new</span>(<span class="number">100</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>])), <span class="number">100</span>);</span><br><span class="line">            contract.<span class="title function_ invoke__">approve</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]), <span class="number">20</span>);</span><br><span class="line">            contract.<span class="title function_ invoke__">transfer_from</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]), AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>]), <span class="number">10</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>])), <span class="number">10</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">#[ink::test]</span></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">allowances_works</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">contract</span> = Erc20::<span class="title function_ invoke__">new</span>(<span class="number">100</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>])), <span class="number">100</span>);</span><br><span class="line">            contract.<span class="title function_ invoke__">approve</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]), <span class="number">200</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(</span><br><span class="line">                contract.<span class="title function_ invoke__">allowance</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]), AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>])),</span><br><span class="line">                <span class="number">200</span></span><br><span class="line">            );</span><br><span class="line"></span><br><span class="line">            <span class="built_in">assert!</span>(contract.<span class="title function_ invoke__">transfer_from</span>(</span><br><span class="line">                AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]),</span><br><span class="line">                AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>]),</span><br><span class="line">                <span class="number">50</span></span><br><span class="line">            ));</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>])), <span class="number">50</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(</span><br><span class="line">                contract.<span class="title function_ invoke__">allowance</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]), AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>])),</span><br><span class="line">                <span class="number">150</span></span><br><span class="line">            );</span><br><span class="line"></span><br><span class="line">            <span class="built_in">assert!</span>(!contract.<span class="title function_ invoke__">transfer_from</span>(</span><br><span class="line">                AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]),</span><br><span class="line">                AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>]),</span><br><span class="line">                <span class="number">100</span></span><br><span class="line">            ));</span><br><span class="line">            <span class="built_in">assert_eq!</span>(contract.<span class="title function_ invoke__">balance_of</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x0</span>; <span class="number">32</span>])), <span class="number">50</span>);</span><br><span class="line">            <span class="built_in">assert_eq!</span>(</span><br><span class="line">                contract.<span class="title function_ invoke__">allowance</span>(AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>]), AccountId::<span class="title function_ invoke__">from</span>([<span class="number">0x1</span>; <span class="number">32</span>])),</span><br><span class="line">                <span class="number">150</span></span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>测试：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cargo test</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">或</span></span><br><span class="line">cargo +nightly test</span><br></pre></td></tr></table></figure>
+<p>编译：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cargo contract build</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">或</span></span><br><span class="line">cargo +nightly contract build</span><br></pre></td></tr></table></figure>
+<p>编译好后的合约在target目录中<code>erc20/target/ink/</code>，其中包含一个<code>erc20.wasm</code>和<code>erc20.contract文件</code>。<code>.contract文件</code>就是用来部署到链上的合约文件，而<code>wasm文件</code>则包含合约的ABI。</p>
+<p>启动节点：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">substrate-contracts-node --dev</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frococo-contracts-rpc.polkadot.io#/explorer">rococo测试网app环境（平行链）</a><br>
+领取该合约平行链的token：前往<a target="_blank" rel="noopener" href="https://matrix.to/#/#rococo-faucet:matrix.org">Rococo faucet matrix channel</a> 在频道里输入：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!drip 你的Substrate地址（即SS58 prefix的地址 ）:1002</span><br></pre></td></tr></table></figure>
+<p>打开<a target="_blank" rel="noopener" href="https://contracts-ui.substrate.io/">合约用户界面</a> 连接节点，也可以去polkadot-app提供的<a target="_blank" rel="noopener" href="https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frococo-contracts-rpc.polkadot.io#/contracts">合约页面(建议，功能齐全)</a><br>
+单击“添加新合同”。<br>
+单击上传新合约代码，即上传前面生成的<code>erc20.contract</code>文件</p>
+<p>具体页面上合约的调用比较简单，这里就不详细阐述了</p>
+<p>备注：<br>
+phala提供了一个合约测试环境也很方便：<br>
+<a target="_blank" rel="noopener" href="https://phat.phala.network/">phala合约测试</a><br>
+可以在此处领取phala的测试币：<br>
+<a target="_blank" rel="noopener" href="https://phala-decoded-2022.netlify.app/easy-challenge">phala测试币领取方式一</a><br>
+<a target="_blank" rel="noopener" href="https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fpoc5.phala.network%2Fws#/accounts">phala测试币领取方式二</a> 手动将内置账户余额转入到你的测试账号</p>
+<h2 id="总结">总结</h2>
+<p>本文编辑完毕</p>
+<h2 id="参考">参考</h2>
+<p>[1] <a target="_blank" rel="noopener" href="https://docs.substrate.io/quick-start/">Substrate官方文档</a></p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/5b9fab93/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Substrate/" rel="tag">Substrate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/84ae716c/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            substrate基础(14)-升级运行中的网络
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/94db7c74/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">substrate加密猫</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

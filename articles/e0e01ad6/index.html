@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Phala单机部署(2)-配置、启动、更新节点 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/phala/应用/Phala单机部署(2)-配置、启动、更新节点"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Phala单机部署(2)-配置、启动、更新节点
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/e0e01ad6/" class="article-date">
+  <time datetime="2022-03-31T07:19:27.000Z" itemprop="datePublished">2022-03-31</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Phala/">Phala</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Phala/%E5%BA%94%E7%94%A8/">应用</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">2.7k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">9 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>环境部署好后，接着就该准备账户、启动节点了</p>
+<span id="more"></span>  
+<h2 id="期间涉及网站汇总">期间涉及网站汇总</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><strong>序号</strong></th>
+<th style="text-align:center"><strong>地址</strong></th>
+<th style="text-align:center"><strong>介绍</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://bitcube.pro/">https://bitcube.pro/</a></td>
+<td style="text-align:center">可app端管理pha代币，目前只有android版</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://polkadot.js.org/extension/">https://polkadot.js.org/extension/</a></td>
+<td style="text-align:center">chrome/edge浏览器钱包插件（需安装）</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://app.phala.network/">https://app.phala.network/</a></td>
+<td style="text-align:center">phala钱包操作、抵押等所有行为均离不开它</td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://phala.one/stake/">https://phala.one/stake/</a></td>
+<td style="text-align:center">用于便捷计算质押值</td>
+</tr>
+<tr>
+<td style="text-align:center">5</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://wiki.phala.network/">https://wiki.phala.network/</a></td>
+<td style="text-align:center">phala 官方开发者文档</td>
+</tr>
+<tr>
+<td style="text-align:center">6</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://forum.phala.network/c/cn-simplified/9">https://forum.phala.network/c/cn-simplified/9</a></td>
+<td style="text-align:center">phala中文论坛</td>
+</tr>
+<tr>
+<td style="text-align:center">7</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://github.com/wowvwow/Phala-Network">https://github.com/wowvwow/Phala-Network</a></td>
+<td style="text-align:center">phala节点源码</td>
+</tr>
+<tr>
+<td style="text-align:center">8</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://github.com/zozyo/phala-guide">https://github.com/zozyo/phala-guide</a></td>
+<td style="text-align:center">第三方提供的部署phala的工具和方案</td>
+</tr>
+<tr>
+<td style="text-align:center">9</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://khala.subscan.io/">https://khala.subscan.io/</a></td>
+<td style="text-align:center">khala区块链浏览器</td>
+</tr>
+<tr>
+<td style="text-align:center">10</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://kusama.subscan.io/">https://kusama.subscan.io/</a></td>
+<td style="text-align:center">kusama的区块链浏览器                  ｜</td>
+</tr>
+<tr>
+<td style="text-align:center">11</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://kusama.subscan.io/parachain/2004">https://kusama.subscan.io/parachain/2004</a></td>
+<td style="text-align:center">khala在kusama的平行链简介             ｜</td>
+</tr>
+<tr>
+<td style="text-align:center">12</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fkhala.api.onfinality.io%2Fpublic-ws#/explorer">https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fkhala.api.onfinality.io%2Fpublic-ws#/explorer</a></td>
+<td style="text-align:center">khala在polkadot中的区块链浏览器</td>
+</tr>
+<tr>
+<td style="text-align:center">13</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://github.com/wowvwow/Phala-Network">https://github.com/wowvwow/Phala-Network</a></td>
+<td style="text-align:center">第三方提供的便捷部署脚本和解决方案</td>
+</tr>
+<tr>
+<td style="text-align:center">14</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://github.com/zozyo/phala-guide">https://github.com/zozyo/phala-guide</a></td>
+<td style="text-align:center">第三方提供的矿工指导教程</td>
+</tr>
+<tr>
+<td style="text-align:center">15</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://github.com/suugee/phala-prb">https://github.com/suugee/phala-prb</a></td>
+<td style="text-align:center">集群部署包括prb</td>
+</tr>
+<tr>
+<td style="text-align:center">16</td>
+<td style="text-align:center"><a target="_blank" rel="noopener" href="https://github.com/Phala-Network/solo-mining-scripts">https://github.com/Phala-Network/solo-mining-scripts</a></td>
+<td style="text-align:center">solo模式部署</td>
+</tr>
+</tbody>
+</table>
+<p>以上网站中，至少需要预先安装好<code>第2项</code>中指定第插件，该插件的使用方式，请自行去网上查找，记得在插件中将账户地址格式显示成Phala网络的。<br>
+该插件可以用来创建phala钱包账户。</p>
+<h2 id="账户管理">账户管理</h2>
+<p>正常情况下，我们需要准备4个账户地址，分别为：</p>
+<ol>
+<li>gas账户，用于节点运行期间矿工燃烧使用，里面余额需大于0，建议在10个左右，以防矿工烧的gas不够用了出问题。</li>
+<li>质押池账户，顾名思义，质押专用，初始时，一个左右，够操作的时候交gas就行。这个账户也是用来创建和管理矿工的。</li>
+<li>个人账户，自行管理pha余额使用，根据需要给不同账户充币</li>
+<li>质押人账户，这是个可选账户，当你池子建好后，这些外部的质押账户就可以将币质押给你的池子。上面提到的<code>质押池账户</code>也可以用作质押人账户。</li>
+</ol>
+<p>虽然说可以公用一个账户，但处于安全考虑，最好划分成这三个账号来各司其职。<br>
+另外，保管好这三个账户的私钥、助记词等，毕竟这是你的私有财产。</p>
+<h2 id="phala配置">Phala配置</h2>
+<p>节点是在docker中运行的，因此，期间有一些配置需要我们结合实际来变更。</p>
+<h3 id="变更节点数据存储位置">变更节点数据存储位置</h3>
+<p>节点数据我们一般都会存到大容量磁盘目录下，但默认情况下，phala会将同步的节点数据保存到：<code>/var/data</code>目录，这个目录不一定符合需要，因此，可以通过如下操作来变更：<br>
+前往：<code>/opt/phala/.env</code>文件，将<code>NODE_VOLUMES</code>和<code>PRUNTIME_VOLUMES</code>的主机目录(冒号左方)变为你需要指向的目录。</p>
+<p><code>20220406备注：</code><br>
+如果<code>khala</code>和<code>kusama</code>数据要分别存到固态硬盘和机械硬盘的话，需要手动到<code>docker-compose.yml</code>中手动映射目录：<code>chains</code>和<code>polkadot</code>，当前官方脚本暂不支持<code>.env</code>，从反馈看，后续会支持的，静待。<br>
+强烈建议<code>khala</code>数据放到固态硬盘下，否则后面校验数据速度会抓狂，我这里速度相差了十几倍</p>
+<h3 id="节点信息配置">节点信息配置</h3>
+<p>有专门的命令来引导配置，这里需要强调的是，引导的配置，其实都是在<code>/opt/phala/.env</code>文件中</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">配置账户信息</span></span><br><span class="line">sudo phala config set</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">按照引导完成配置，其中，gas账户余额必须大于0。这些配置都很简单，也很明确，这里就不阐述了</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看配置信息</span></span><br><span class="line">sudo phala config show</span><br></pre></td></tr></table></figure>
+<h2 id="启动节点">启动节点</h2>
+<p>执行以下命令后，会启动三个docker服务：<code>挖矿程序phala-pruntime</code>、<code>中转组件phala-pherry</code>、<code>区块节点数据phala-node</code>，本小结后面专门介绍这三个服务的概念<br>
+三者之间的关系如下图：</p>
+<img src="/articles/e0e01ad6/2.png" class="" title="三者服务关系图">
+<h3 id="1-启动命令">1. 启动命令</h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">数据同步，这条命令貌似有问题，可以跳过不执行它，直接执行下一条start命令</span></span><br><span class="line">sudo phala presync</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">该命令会安装docker 、同步数据、启动节点运行等(俗称挖矿)，后台执行</span></span><br><span class="line">sudo phala start</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">检查三个docker服务是否都在UP状态，若有异常，则排查原因</span></span><br><span class="line">sudo docker ps -a</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">期间可以通过docker执行查看各个docker服务等日志，docker命令这里就不讲解了，网上很多</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看phala链、同步信息，每分钟刷新一次</span></span><br><span class="line">sudo phala status</span><br></pre></td></tr></table></figure>
+<p>启动后，会先同步khala和kusama数据，这两个同步完成后，才开始同步，pherry。同步完成后，开始注册矿机，并显示一个矿机的公钥地址，这个地址用来后续给抵押池中使用。</p>
+<h3 id="2-区块节点数据服务phala-node">2. 区块节点数据服务phala-node</h3>
+<p>该服务只是用来同步节点数据的，不使用SGX<br>
+节点数据保存地点为<code>[指定的主机目录]/khala-dev-node</code>，其中 khala 链数据保存在<code>chains</code>子文件夹下，kusama 链数据保存在<code>polkadot</code>子文件夹下<br>
+数据同步会占用部分CPU，如果有条件，可以单独一台性能良好的主机部署该服务（不需要SGX）</p>
+<h3 id="3-中转服务phala-pherry">3. 中转服务phala-pherry</h3>
+<p>该服务只是用来中转数据的，不使用SGX<br>
+中转组件是一个无状态的转换机，只起到传话筒的作用。重启中转组件只会导致很短暂的 pruntime 的暂停同步。<br>
+有时官方可能会有链上升级，会有通知重启中转组件，建议保持关注官方的技术交流群，以免造成损失。<br>
+<code>pherry服务</code>会占用部分CPU，如果有条件，可以单独一台性能良好的主机部署该服务（不需要SGX）</p>
+<h3 id="4-挖矿服务phala-pruntime">4. 挖矿服务phala-pruntime</h3>
+<p>pruntime（挖矿程序）作为最关键的组件，必须在支持 SGX 的设备上运行，并且 phala config set 命令里面唯一对其生效的参数只有核心数量。<br>
+运行 pruntime 并且链上开始挖矿时，会有 ./app 的程序占用 100% 的 CPU，这是正常情况。<br>
+PHA 挖矿需要满负载 CPU， 建议设备使用较好的散热器以获得高评分。</p>
+<h2 id="节点更新">节点更新</h2>
+<p>当需要更新节点时，执行如下操作</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">务必先停止服务</span></span><br><span class="line">sudo phala stop</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">更新节点</span></span><br><span class="line">sudo phala update</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">或者更新并清除原有保存的所有信息，谨慎操作该命令</span></span><br><span class="line">sudo phala update clean</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">重新启动服务</span></span><br><span class="line">sudo phala start</span><br></pre></td></tr></table></figure>
+<h2 id="phala-app操作">phala app操作</h2>
+<p>前往地址：<a target="_blank" rel="noopener" href="https://app.phala.network/">https://app.phala.network/</a></p>
+<h2 id="抵押机制">抵押机制</h2>
+<p>官方针对抵押机制，有个简洁版的说明：<br>
+<a target="_blank" rel="noopener" href="https://wiki.phala.network/en-us/general/applications/stakepool/">质押机制</a><br>
+<a target="_blank" rel="noopener" href="https://wiki.phala.network/en-us/general/applications/delegation-example/">质押示例</a></p>
+<p>英文版的，这里我做个简单说明。</p>
+<h3 id="创建抵押池">创建抵押池</h3>
+<p>该步骤需要使用抵押账户来创建，抵押账户余额至少需要够交手续费，手续费很少：</p>
+<img src="/articles/e0e01ad6/1.png" class="" title="创建抵押池">
+<h3 id="设置抵押上限和佣金率">设置抵押上限和佣金率</h3>
+<p>如下图：<br>
+Set Commission 抵押池费率：0-100，100表示所有收益均归抵押池所有，0表示所有收益均亏质押人所有。一般要吸引人的话，设置个50左右<br>
+Set Cap 抵押上限，默认无上限，设置一个上限，主要的目的是可以防止外人任意抵押。<br>
+上限这个值可以根据矿工最小质押只和来考虑，最起码要大于矿工要求的最小质押（这个等后面步骤添加了矿工后，会有一个最小和最大质押额度，这个最大质押额度是针对矿工的），总之，这个质押池的上限要大于最终所有矿工质押的数量。具体参考依据可以看下面<code>挖矿前各个账户余额准备以及质押池质押余额准备</code>中介绍的</p>
+<img src="/articles/e0e01ad6/3.png" class="" title="创建抵押池">
+<h3 id="添加worker">添加Worker</h3>
+<p>看上图<br>
+<code>Add Worker</code>：将worker和抵押池绑定。这个worker是输入节点同步结束后，注册成功的那个系统给的矿工公钥地址。<br>
+这里也可以看出：</p>
+<ol>
+<li>要先等节点数据同步完毕</li>
+<li>一个质押池可以绑定多个worker</li>
+<li>只有质押池创建者才能添加worker</li>
+</ol>
+<img src="/articles/e0e01ad6/3.png" class="" title="质押池操作">
+<img src="/articles/e0e01ad6/4.png" class="" title="矿工公钥">
+<h3 id="挖矿前各个账户余额准备以及质押池质押余额准备">挖矿前各个账户余额准备以及质押池质押余额准备</h3>
+<ol>
+<li>下方矿工启动前，页面会提示至少质押数额（如下图）；另外根据下面公式，可以估算出最少要质押的数量：</li>
+</ol>
+<p class='katex-block katex-error' title='ParseError: KaTeX parse error: Limit controls must follow a math operator at position 2: S\̲n̲o̲l̲i̲m̲i̲t̲s̲_min = k \sqrt{…'>S\nolimits_min = k \sqrt{P}
+</p>
+<p>其中，<br>
+<code>P</code>为<code>矿工评分</code>，这个就是节点同步完，矿工注册后，显示的那个p评分，如上图所示；<br>
+<code>k</code>为系数，目前官方舍弟khala和phala网络均为<code>50</code></p>
+<img src="/articles/e0e01ad6/5.png" class="" title="页面估算质押数量">
+<ol start="2">
+<li>根据计算出的质押数量，估算该质押池质押上限（或者根据业务需要选择是否设置上限），并设置</li>
+<li>通过质押页面，找到pid，将token(数额要大于上面计算的最少质押数量)质押到指定的质押池，具体质押多少，根据业务决定。质押操作如下图</li>
+</ol>
+<img src="/articles/e0e01ad6/6.png" class="" title="找到质押池并质押">
+<h3 id="开始挖矿">开始挖矿</h3>
+<p>点击开始挖矿，会显示启动该矿工需要的最少质押和最大质押，根据前面质押池已经质押的数量，输入一个最少和最大之间的数（这个数不能大于你质押池的数，当然越大挖矿效率越高），然后就能启动矿工挖矿了，这里需要注意的是，此处启动需要输入的数，只是将质押池的对应数量的token锁定给矿工，并不是要从你账户里再扣除这个数。</p>
+<p>以上步骤操作完成后，点击开始挖矿，当挖到收益后，就会按比例将收益划分给指定用户(抵押人账户和抵押池账户)<br>
+目前看，20秒左右可以出一个块（快的时候12秒左右就能出块）；但貌似要两天左右才能轮到挖出一次</p>
+<h3 id="质押及奖励获取">质押及奖励获取</h3>
+<p>这里需要知道：挖出来的20%是要给<code>Treasury</code>，也就是国库，相当于是税收<br>
+官方这里讲解的很详细，直接看吧：<br>
+<a target="_blank" rel="noopener" href="https://wiki.phala.network/en-us/general/applications/phala-app/">质押及奖励获取</a><br>
+<a target="_blank" rel="noopener" href="https://wiki.phala.network/en-us/general/applications/reward-calculation/">估算你的收益</a><br>
+后面我也会结合官方的操作来写出自己的操作方式和心得</p>
+<h2 id="总结">总结</h2>
+<p>至此，该篇结束，单机从部署到产生收益整个流程已经可以走通。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/e0e01ad6/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Phala/" rel="tag">Phala</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/942171b7/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Phala常用命令
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/97c9f4fc/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Phala单机部署(1)-设备和系统准备</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

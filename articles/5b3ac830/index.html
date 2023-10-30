@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>pallet进阶(6)-offchain-worker |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/substrate/pallet进阶/pallet进阶(7)-offchain-worker"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  pallet进阶(6)-offchain-worker
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/5b3ac830/" class="article-date">
+  <time datetime="2022-09-06T06:27:17.000Z" itemprop="datePublished">2022-09-06</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/">Substrate</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/pallet%E8%BF%9B%E9%98%B6/">pallet进阶</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">11 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>offchain worker，链下工作者。</p>
+<span id="more"></span>
+<h2 id="1-概述">1. 概述</h2>
+<ol>
+<li><code>offchain worker</code> 可以提交签名交易、未签名交易、具有签名负载的未签名交易(即内容签名的未签名交易)等功能。</li>
+<li>一个block import结束之后开始执行offchain worker</li>
+<li><code>ocw</code>即为<code>offchain worker</code>的缩写</li>
+</ol>
+<h2 id="2-提交签名交易">2. 提交签名交易</h2>
+<p>表示用自己的私钥签名的文件或内容，标明归属权</p>
+<h3 id="2-1-在pallet中添加代码">2.1 在pallet中添加代码</h3>
+<p>pallet的lib.rs中：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"><span class="comment">//=========================</span></span><br><span class="line"><span class="comment">//需要关注的第一部分，引入相关密码学工具</span></span><br><span class="line"><span class="comment">// 这部分主要是用来在offchain worker提交签名交易时的签名的子模块。在实际的开发中，这部分基本上是固定的写法。在substrate中支持ed25519和sr25519，我们此处使用的是sr29915作为例子。其中KEY_TYPE是offchain worker签名时检索key使用的类型，由开发者指定，我们这里指定为“demo”。</span></span><br><span class="line"><span class="comment">//=========================</span></span><br><span class="line"><span class="keyword">use</span> sp_core::crypto::KeyTypeId;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">const</span> KEY_TYPE: KeyTypeId = <span class="title function_ invoke__">KeyTypeId</span>(*<span class="string">b&quot;demo&quot;</span>);</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> crypto &#123;</span><br><span class="line">  <span class="keyword">use</span> super::KEY_TYPE;</span><br><span class="line">  <span class="keyword">use</span> sp_runtime::app_crypto::&#123;app_crypto, sr25519&#125;;</span><br><span class="line">  app_crypto!(sr25519, KEY_TYPE);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">type</span> <span class="title class_">AuthorityId</span> = crypto::Public;</span><br><span class="line"><span class="comment">//==========================</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">use</span> pallet::*;</span><br><span class="line"><span class="meta">#[frame_support::pallet]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> pallet &#123;</span><br><span class="line">  <span class="keyword">use</span> frame_support::pallet_prelude::*;</span><br><span class="line">  <span class="keyword">use</span> frame_system::pallet_prelude::*;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">use</span> frame_system::offchain::&#123;</span><br><span class="line">    AppCrypto, CreateSignedTransaction, SendSignedTransaction, Signer,</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::pallet]</span></span><br><span class="line">  <span class="meta">#[pallet::generate_store(pub(super) trait Store)]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pallet</span>&lt;T&gt;(_);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//=========================</span></span><br><span class="line">  <span class="comment">//需要关注的第二部分，需要实现签名配置</span></span><br><span class="line">  <span class="comment">//config需要继承 CreateSignedTransaction；</span></span><br><span class="line">  <span class="comment">//需要定义类型type AuthorityId: AppCrypto&lt;Self::Public, Self::Signature&gt;;</span></span><br><span class="line">  <span class="meta">#[pallet::config]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: frame_system::Config + CreateSignedTransaction&lt;Call&lt;<span class="keyword">Self</span>&gt;&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">AuthorityId</span>: AppCrypto&lt;<span class="keyword">Self</span>::Public, <span class="keyword">Self</span>::Signature&gt;;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Event</span>: <span class="built_in">From</span>&lt;Event&lt;<span class="keyword">Self</span>&gt;&gt; + IsType&lt;&lt;<span class="keyword">Self</span> <span class="keyword">as</span> frame_system::Config&gt;::Event&gt;;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//=========================</span></span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::storage]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">type</span> <span class="title class_">SomeInfo</span>&lt;T: Config&gt; = StorageMap&lt;_, Blake2_128Concat, <span class="type">u64</span>, <span class="type">u64</span>, ValueQuery&gt;;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::event]</span></span><br><span class="line">  <span class="meta">#[pallet::generate_deposit(pub(super) fn deposit_event)]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Event</span>&lt;T: Config&gt; &#123;</span><br><span class="line">    <span class="title function_ invoke__">SetSomeInfo</span>(<span class="type">u64</span>, <span class="type">u64</span>),</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::error]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Error</span>&lt;T&gt; &#123;</span><br><span class="line">    OffchainSignedTxError,</span><br><span class="line">    NoAcctForSigning,</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">//=========================</span></span><br><span class="line">  <span class="comment">//需要关注的第三部分 钩子函数中，加入链下函数，该offchain_worker函数会在一个块import成功后调用</span></span><br><span class="line">  <span class="comment">//调用offchain worker是在钩子函数中实现。这里重点要提一下的是代码注释标注3.1的部分，在offchain worker中调用交易的方式是这样，</span></span><br><span class="line">  <span class="comment">//=========================</span></span><br><span class="line">  <span class="meta">#[pallet::hooks]</span></span><br><span class="line">  <span class="keyword">impl</span>&lt;T: Config&gt; Hooks&lt;BlockNumberFor&lt;T&gt;&gt; <span class="keyword">for</span> <span class="title class_">Pallet</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">offchain_worker</span>(block_number: T::BlockNumber) &#123;</span><br><span class="line">      log::info!(target: <span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;before offchain_worker set storage: &#123;:?&#125;&quot;</span>, block_number);</span><br><span class="line">      <span class="keyword">let</span> <span class="variable">result</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">offchain_signed_tx</span>(block_number);</span><br><span class="line">      log::info!(target: <span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;after offchain_worker set storage: &#123;:?&#125;&quot;</span>, block_number);</span><br><span class="line">      <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Err</span>(e) = result &#123;</span><br><span class="line">        log::error!(target:<span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;offchain_worker error: &#123;:?&#125;&quot;</span>, e);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::call]</span></span><br><span class="line">  <span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="meta">#[pallet::weight(0)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">submit_something_signed</span>(origin: OriginFor&lt;T&gt;, number: <span class="type">u64</span>, ) <span class="punctuation">-&gt;</span> DispatchResultWithPostInfo &#123;</span><br><span class="line">      log::info!(target:<span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;11111 +++++++++++++++++++ &quot;</span>);</span><br><span class="line">      <span class="title function_ invoke__">ensure_signed</span>(origin)?;</span><br><span class="line">      <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">cnt</span>: <span class="type">u64</span> = <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">if</span> number &gt; <span class="number">0</span> &#123;</span><br><span class="line">        cnt = number;</span><br><span class="line">      &#125;</span><br><span class="line">      log::info!(target:<span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;+++++++++++++++++++ offchain_worker set storage: &#123;:?&#125;, cnt: &#123;:?&#125;&quot;</span>, number, cnt);</span><br><span class="line">      SomeInfo::&lt;T&gt;::<span class="title function_ invoke__">insert</span>(&amp;number, cnt);</span><br><span class="line">      <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::<span class="title function_ invoke__">SetSomeInfo</span>(number, cnt));</span><br><span class="line">      <span class="title function_ invoke__">Ok</span>(().<span class="title function_ invoke__">into</span>())</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//这是属于内部方法</span></span><br><span class="line">  <span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">offchain_signed_tx</span>(block_number: T::BlockNumber) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), Error&lt;T&gt;&gt; &#123;</span><br><span class="line">      <span class="keyword">let</span> <span class="variable">signer</span> = Signer::&lt;T, T::AuthorityId&gt;::<span class="title function_ invoke__">any_account</span>();</span><br><span class="line">      log::info!(target:<span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;+++++++++++++++++++, can sign: &#123;:?&#125;&quot;</span>, signer.<span class="title function_ invoke__">can_sign</span>());</span><br><span class="line">      <span class="keyword">let</span> <span class="variable">number</span>: <span class="type">u64</span> = block_number.<span class="title function_ invoke__">try_into</span>().<span class="title function_ invoke__">unwrap_or</span>(<span class="number">0</span>);</span><br><span class="line">      <span class="comment">//需要关注的3.1</span></span><br><span class="line">      <span class="keyword">let</span> <span class="variable">result</span> = signer.<span class="title function_ invoke__">send_signed_transaction</span>(|_acct| Call::submit_something_signed &#123; number &#125;);</span><br><span class="line">      <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>((_acc, res)) = result &#123;</span><br><span class="line">        <span class="keyword">if</span> res.<span class="title function_ invoke__">is_err</span>() &#123;</span><br><span class="line">          <span class="keyword">return</span> <span class="title function_ invoke__">Err</span>(&lt;Error&lt;T&gt;&gt;::OffchainSignedTxError)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="title function_ invoke__">Err</span>(&lt;Error&lt;T&gt;&gt;::NoLocalAcctForSigning)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-在runtime中添加相关代码">2.2 在runtime中添加相关代码</h3>
+<p>runtime/src/lib.rs中</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;LocalCall&gt; frame_system::offchain::CreateSignedTransaction&lt;LocalCall&gt; <span class="keyword">for</span> <span class="title class_">Runtime</span></span><br><span class="line"><span class="keyword">where</span> Call: <span class="built_in">From</span>&lt;LocalCall&gt;, &#123;</span><br><span class="line">  <span class="keyword">fn</span> <span class="title function_">create_transaction</span>&lt;C: frame_system::offchain::AppCrypto&lt;<span class="keyword">Self</span>::Public, <span class="keyword">Self</span>::Signature&gt;&gt;(</span><br><span class="line">    call: Call,</span><br><span class="line">    public: &lt;Signature <span class="keyword">as</span> sp_runtime::traits::Verify&gt;::Signer,</span><br><span class="line">    account: AccountId,</span><br><span class="line">    nonce: Index, ) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;(Call, &lt;UncheckedExtrinsic <span class="keyword">as</span> sp_runtime::traits::Extrinsic&gt;::SignaturePayload)&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">tip</span> = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// take the biggest period possible.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">period</span> = <span class="number">1</span> &lt;&lt; <span class="number">7</span>;</span><br><span class="line">    <span class="comment">// BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">current_block</span> = System::<span class="title function_ invoke__">block_number</span>()</span><br><span class="line">      .saturated_into::&lt;<span class="type">u64</span>&gt;()</span><br><span class="line">      <span class="comment">// The `System::block_number` is initialized with `n+1`,</span></span><br><span class="line">      <span class="comment">// so the actual block number is `n`.</span></span><br><span class="line">      .<span class="title function_ invoke__">saturating_sub</span>(<span class="number">1</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">era</span> = Era::<span class="title function_ invoke__">mortal</span>(period, current_block);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">extra</span> = (</span><br><span class="line">      frame_system::CheckNonZeroSender::&lt;Runtime&gt;::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">      frame_system::CheckSpecVersion::&lt;Runtime&gt;::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">      frame_system::CheckTxVersion::&lt;Runtime&gt;::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">      frame_system::CheckGenesis::&lt;Runtime&gt;::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">      frame_system::CheckEra::&lt;Runtime&gt;::<span class="title function_ invoke__">from</span>(era),</span><br><span class="line">      frame_system::CheckNonce::&lt;Runtime&gt;::<span class="title function_ invoke__">from</span>(nonce),</span><br><span class="line">      frame_system::CheckWeight::&lt;Runtime&gt;::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">      pallet_transaction_payment::ChargeTransactionPayment::&lt;Runtime&gt;::<span class="title function_ invoke__">from</span>(tip),</span><br><span class="line">    );</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">raw_payload</span> = SignedPayload::<span class="title function_ invoke__">new</span>(call, extra)</span><br><span class="line">      .<span class="title function_ invoke__">map_err</span>(|e| &#123;</span><br><span class="line">        log::warn!(<span class="string">&quot;Unable to create signed payload: &#123;:?&#125;&quot;</span>, e);</span><br><span class="line">      &#125;).<span class="title function_ invoke__">ok</span>()?;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">signature</span> = raw_payload.<span class="title function_ invoke__">using_encoded</span>(|payload| C::<span class="title function_ invoke__">sign</span>(payload, public))?;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">address</span> = &lt;<span class="keyword">Self</span> <span class="keyword">as</span> frame_system::Config&gt;::Lookup::<span class="title function_ invoke__">unlookup</span>(account);</span><br><span class="line">    <span class="keyword">let</span> (call, extra, _) = raw_payload.<span class="title function_ invoke__">deconstruct</span>();</span><br><span class="line">    <span class="title function_ invoke__">Some</span>((call, (address, signature.<span class="title function_ invoke__">into</span>(), extra)))</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">frame_system</span>::offchain::SigningTypes <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Public</span> = &lt;Signature <span class="keyword">as</span> sp_runtime::traits::Verify&gt;::Signer;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Signature</span> = Signature;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;C&gt; frame_system::offchain::SendTransactionTypes&lt;C&gt; <span class="keyword">for</span> <span class="title class_">Runtime</span></span><br><span class="line"><span class="keyword">where</span> Call: <span class="built_in">From</span>&lt;C&gt;, &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">OverarchingCall</span> = Call;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Extrinsic</span> = UncheckedExtrinsic;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在大多数情况下直接这样使用就好了。下面还需要为runtime添加pallet_ocw_sigtx::Config：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">MyAuthorityId</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">frame_system</span>::offchain::AppCrypto&lt;&lt;Signature <span class="keyword">as</span> Verify&gt;::Signer, Signature&gt; <span class="keyword">for</span> <span class="title class_">MyAuthorityId</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">RuntimeAppPublic</span> = pallet_ocw_sigtx::crypto::Public;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">GenericSignature</span> = sp_core::sr25519::Signature;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">GenericPublic</span> = sp_core::sr25519::Public;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_ocw_sigtx</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">AuthorityId</span> = MyAuthorityId;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">construct_runtime!(</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Runtime</span> <span class="keyword">where</span></span><br><span class="line">    Block = Block,</span><br><span class="line">    NodeBlock = opaque::Block,</span><br><span class="line">    UncheckedExtrinsic = UncheckedExtrinsic&#123;</span><br><span class="line">    System: frame_system,</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    OcwSigtx: pallet_ocw_sigtx,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-提交未签名交易">3. 提交未签名交易</h2>
+<h3 id="3-1-在pallet中添加offchain-worker">3.1 在pallet中添加offchain worker</h3>
+<ol>
+<li>修改Config配置</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::config]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: frame_system::Config + SendTransactionTypes&lt;Call&lt;<span class="keyword">Self</span>&gt;&gt; &#123;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>实现具体的未签名调度函数<br>
+也就是公共函数</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::weight(0)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">submit_something_unsigned</span>(origin: OriginFor&lt;T&gt;, number: <span class="type">u64</span>, ) <span class="punctuation">-&gt;</span> DispatchResultWithPostInfo &#123;</span><br><span class="line">  <span class="title function_ invoke__">ensure_none</span>(origin)?;</span><br><span class="line">  <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">cnt</span>: <span class="type">u64</span> = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">if</span> number &gt; <span class="number">0</span> &#123;</span><br><span class="line">    cnt = number;</span><br><span class="line">  &#125;</span><br><span class="line">  log::info!(target:<span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;unsigned +++++++++++++++++++ offchain_worker set storage: &#123;:?&#125;, cnt: &#123;:?&#125;&quot;</span>, number, cnt);</span><br><span class="line">  SomeInfo::&lt;T&gt;::<span class="title function_ invoke__">insert</span>(&amp;number, cnt);</span><br><span class="line">  <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::<span class="title function_ invoke__">UnsignedPutSetSomeInfo</span>(number, cnt));</span><br><span class="line">  <span class="title function_ invoke__">Ok</span>(().<span class="title function_ invoke__">into</span>())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>在offchain worker中调用未签名交易函数<br>
+钩子函数中调用</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::hooks]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; Hooks&lt;BlockNumberFor&lt;T&gt;&gt; <span class="keyword">for</span> <span class="title class_">Pallet</span>&lt;T&gt; &#123;</span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">offchain_worker</span>(block_number: T::BlockNumber) &#123;</span><br><span class="line">  <span class="keyword">let</span> <span class="variable">number</span>: <span class="type">u64</span> = block_number.<span class="title function_ invoke__">try_into</span>().<span class="title function_ invoke__">unwrap_or</span>(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">//下面为具体的调用未签名交易的方式</span></span><br><span class="line">  <span class="keyword">let</span> <span class="variable">call</span> = Call::submit_something_unsigned &#123; number &#125;;</span><br><span class="line">  <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Err</span>(e) = SubmitTransaction::&lt;T, Call&lt;T&gt;&gt;::<span class="title function_ invoke__">submit_unsigned_transaction</span>(call.<span class="title function_ invoke__">into</span>())</span><br><span class="line">      .<span class="title function_ invoke__">map_err</span>(|_| &lt;Error&lt;T&gt;&gt;::OffchainUnsignedTxError) &#123;</span><br><span class="line">    log::error!(target:<span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;offchain_worker submit unsigned tx error: &#123;:?&#125;&quot;</span>, e);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    log::info!(target:<span class="string">&quot;ocw&quot;</span>, <span class="string">&quot;offchain_worker submit unsigned tx success&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>实现未签名交易验证的trait</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::validate_unsigned]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; ValidateUnsigned <span class="keyword">for</span> <span class="title class_">Pallet</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Call</span> = Call&lt;T&gt;;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">validate_unsigned</span>(_source: TransactionSource, call: &amp;<span class="keyword">Self</span>::Call) <span class="punctuation">-&gt;</span> TransactionValidity &#123;</span><br><span class="line">       <span class="comment">//Call冒号后面就是具体的提交未签名交易的函数，</span></span><br><span class="line">       <span class="comment">//需要对此交易进行验证</span></span><br><span class="line">       <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Call</span>::submit_something_unsigned &#123; number: _ &#125; = call &#123;</span><br><span class="line">        ValidTransaction::<span class="title function_ invoke__">with_tag_prefix</span>(<span class="string">&quot;OcwUnsigtx&quot;</span>)</span><br><span class="line">          .<span class="title function_ invoke__">priority</span>(TransactionPriority::<span class="title function_ invoke__">max_value</span>())</span><br><span class="line">          .<span class="title function_ invoke__">longevity</span>(<span class="number">5</span>)</span><br><span class="line">          .<span class="title function_ invoke__">propagate</span>(<span class="literal">false</span>)</span><br><span class="line">          .<span class="title function_ invoke__">build</span>()</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        InvalidTransaction::Call.<span class="title function_ invoke__">into</span>()</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+<h3 id="3-2-在runtime中添加相关代码">3.2 在runtime中添加相关代码</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_ocw_unsigtx</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">construct_runtime!(</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Runtime</span> <span class="keyword">where</span></span><br><span class="line">    Block = Block,</span><br><span class="line">    NodeBlock = opaque::Block,</span><br><span class="line">    UncheckedExtrinsic = UncheckedExtrinsic</span><br><span class="line">  &#123;</span><br><span class="line">    System: frame_system,</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    OcwUnSigtx: pallet_ocw_unsigtx,</span><br><span class="line">  &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h2 id="4-具有签名负载的未签名交易">4. 具有签名负载的未签名交易</h2>
+<p>和<code>提交未签名交易</code>的方式类似，需要时再细查</p>
+<h2 id="5-应用：在ocw中发送http请求">5. 应用：在ocw中发送http请求</h2>
+<p>这部分的功能非常简单，就是发送请求https://min-api.cryptocompare.com/data/price?fsym=BTC&amp;tsyms=USD 来获取btc价格</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//内部方法</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">parse_price</span>(price_str: &amp;<span class="type">str</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;<span class="type">u32</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">val</span> = lite_json::<span class="title function_ invoke__">parse_json</span>(price_str);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">price</span> = <span class="keyword">match</span> val.<span class="title function_ invoke__">ok</span>()? &#123;</span><br><span class="line">            JsonValue::<span class="title function_ invoke__">Object</span>(obj) =&gt; &#123;</span><br><span class="line">                <span class="keyword">let</span> (_, v) =</span><br><span class="line">                    obj.<span class="title function_ invoke__">into_iter</span>().<span class="title function_ invoke__">find</span>(|(k, _)| k.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">copied</span>().<span class="title function_ invoke__">eq</span>(<span class="string">&quot;USD&quot;</span>.<span class="title function_ invoke__">chars</span>()))?;</span><br><span class="line">                <span class="keyword">match</span> v &#123;</span><br><span class="line">                    JsonValue::<span class="title function_ invoke__">Number</span>(number) =&gt; number,</span><br><span class="line">                    _ =&gt; <span class="keyword">return</span> <span class="literal">None</span>,</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            _ =&gt; <span class="keyword">return</span> <span class="literal">None</span>,</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">exp</span> = price.fraction_length.<span class="title function_ invoke__">saturating_sub</span>(<span class="number">2</span>);</span><br><span class="line">        <span class="title function_ invoke__">Some</span>(price.integer <span class="keyword">as</span> <span class="type">u32</span> * <span class="number">100</span> + (price.fraction / <span class="number">10_u64</span>.<span class="title function_ invoke__">pow</span>(exp)) <span class="keyword">as</span> <span class="type">u32</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">fetch_price</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">u32</span>, http::Error&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">deadline</span> = sp_io::offchain::<span class="title function_ invoke__">timestamp</span>().<span class="title function_ invoke__">add</span>(Duration::<span class="title function_ invoke__">from_millis</span>(<span class="number">2_000</span>));</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">request</span> = http::Request::<span class="title function_ invoke__">get</span>(</span><br><span class="line">            <span class="string">&quot;https://min-api.cryptocompare.com/data/price?fsym=BTC&amp;tsyms=USD&quot;</span>,</span><br><span class="line">        );</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">pending</span> = request.<span class="title function_ invoke__">deadline</span>(deadline).<span class="title function_ invoke__">send</span>().<span class="title function_ invoke__">map_err</span>(|_| http::Error::IoError)?;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">response</span> =</span><br><span class="line">            pending.<span class="title function_ invoke__">try_wait</span>(deadline).<span class="title function_ invoke__">map_err</span>(|_| http::Error::DeadlineReached)??;</span><br><span class="line">        <span class="keyword">if</span> response.code != <span class="number">200</span> &#123;</span><br><span class="line">            log::warn!(<span class="string">&quot;Unexpected status code: &#123;&#125;&quot;</span>, response.code);</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">Err</span>(http::Error::Unknown)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">body</span> = response.<span class="title function_ invoke__">body</span>().collect::&lt;<span class="type">Vec</span>&lt;<span class="type">u8</span>&gt;&gt;();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">body_str</span> = sp_std::<span class="type">str</span>::<span class="title function_ invoke__">from_utf8</span>(&amp;body).<span class="title function_ invoke__">map_err</span>(|_| &#123;</span><br><span class="line">            log::warn!(<span class="string">&quot;No UTF8 body&quot;</span>);</span><br><span class="line">            http::Error::Unknown</span><br><span class="line">        &#125;)?;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">price</span> = <span class="keyword">match</span> <span class="keyword">Self</span>::<span class="title function_ invoke__">parse_price</span>(body_str) &#123;</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(price) =&gt; <span class="title function_ invoke__">Ok</span>(price),</span><br><span class="line">            <span class="literal">None</span> =&gt; &#123;</span><br><span class="line">                log::warn!(<span class="string">&quot;Unable to extract price from the response: &#123;:?&#125;&quot;</span>, body_str);</span><br><span class="line">                <span class="title function_ invoke__">Err</span>(http::Error::Unknown)</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;?;</span><br><span class="line">        log::warn!(<span class="string">&quot;Got price: &#123;&#125; cents&quot;</span>, price);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(price)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>钩子函数调用：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::hooks]</span></span><br><span class="line">  <span class="keyword">impl</span>&lt;T: Config&gt; Hooks&lt;BlockNumberFor&lt;T&gt;&gt; <span class="keyword">for</span> <span class="title class_">Pallet</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">offchain_worker</span>(_block_number: T::BlockNumber) &#123;</span><br><span class="line">      <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>(data) = <span class="keyword">Self</span>::<span class="title function_ invoke__">fetch_price</span>() &#123;</span><br><span class="line">        log::info!(target:<span class="string">&quot;offchain-index-demo&quot;</span>, <span class="string">&quot;1. get price, price ======================== &#123;:?&#125;&quot;</span>, data);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        log::info!(target:<span class="string">&quot;offchain-index-demo&quot;</span>, <span class="string">&quot;2. get price failed ==================== &quot;</span>);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结">总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/5b3ac830/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Substrate/" rel="tag">Substrate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/dea3a0dc/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            pallet进阶(8)-offchain storage
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/10dc8319/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">pallet进阶(6)-调试</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

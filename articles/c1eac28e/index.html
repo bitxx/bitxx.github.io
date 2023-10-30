@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>spacemesh标准部署教程 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/spacemesh/spacemesh标准部署教程"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  spacemesh标准部署教程
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/c1eac28e/" class="article-date">
+  <time datetime="2023-08-09T13:45:40.000Z" itemprop="datePublished">2023-08-09</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Spacemesh/">Spacemesh</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">4.6k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">18 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>话不多说，整理部署运行过程</p>
+<span id="more"></span>  
+<h2 id="1-环境配置">1. 环境配置</h2>
+<ol>
+<li>操作系统：推荐ubuntu 22.04 一定用这个版本，别的版本也能跑，但各种毛病合配置，会让你抓狂</li>
+<li>显卡：4070、3080等</li>
+<li>驱动：ubuntu官方方式直接安装显卡</li>
+<li>内存：32G起步</li>
+<li>硬盘：除了系统盘。要P多大的盘，根据自己需要考量。最小需要256G。想省成本，可以用机械盘。固态盘主要是扫盘时候效率高，p盘没多大区别</li>
+</ol>
+<h3 id="1-1-环境说明">1.1 环境说明</h3>
+<p>这块踩了很多坑，开始这个项目前，一定要先确保环境没有问题。其实最大的问题，就是显卡驱动。这个要没问题，那基本就都没什么事了。整理了下相关命令，具体如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">1. 新装系统</span></span><br><span class="line">带有独显的设备重装系统，需要明白，ubuntu自带的显卡驱动nouveau可能会导致你无法重装，或者装上无法启动，如果开机有提示这个驱动导致你无法进入系统，那就参考网上的解决方案吧。</span><br><span class="line">我的解决方式是，在重装启动时，按ESC键，当画面让你选择哪种方式启动装系统时，一般选择第一种（不要回车），然后键盘按E，添加一行内容：splash nouveau.modeset=0 ，然后键盘按F10，正常就能进入系统或者安装系统了。</span><br><span class="line">每次开机或者装机，都这样操作。进入系统后，需要将nouveau加入黑名单，具体往上找找吧，大体如下：</span><br><span class="line">sudo vim /etc/modprobe.d/blacklist-nouveau.conf</span><br><span class="line">输入内容：</span><br><span class="line">blacklist nouveau</span><br><span class="line">options nouveau modeset=0</span><br><span class="line">生效：</span><br><span class="line">sudo update-initramfs -u</span><br><span class="line">重启系统：</span><br><span class="line">reboot</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">2. 检测ubuntu驱动并安装</span></span><br><span class="line">apt-get update</span><br><span class="line">ubuntu-drivers devices</span><br><span class="line">选择标记recommand的那个版本（我是这样成功的，你需要根据自己实际情况考量，可前往https://www.nvidia.cn/Download/index.aspx?lang=cn 检查你的卡是否支持）然后安装，比如535：</span><br><span class="line">建议此种方式安装，可以最大限度减少没必要的文件</span><br><span class="line">sudo apt-get install nvidia-driver-535</span><br><span class="line">重启</span><br><span class="line">reboot</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">3. 检测显卡驱动是否安装成功</span></span><br><span class="line">如果有数据，则驱动安装成功，只是安装成功，但能否满足项目需要，还要看下一步</span><br><span class="line">nvidia-smi</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">4. 安装clinfo</span></span><br><span class="line">sudo apt install clinfo</span><br><span class="line">执行下方命令检测，如果能够输出你的显卡信息，那你的环境基本就没问题了。这个命令是最关键的一步，我在这里卡了好几天，一直什么数据都不显示。最后发现是有一张显卡有问题，拔掉后就正常了。</span><br><span class="line">clinfo -l</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">5. 安装其余依赖（务必安装）</span></span><br><span class="line">sudo apt update &amp;&amp; sudo apt install -y git git-lfs make curl build-essential unzip wget ocl-icd-opencl-dev unzip libudev-dev</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">6. 可选</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">p盘完成后，如果后续在没有显卡的设备，或者没有进行过上述安装的设备中进行扫盘，则需要进行如下安装。该方式主要是针对类似如下案例情况下的。</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">比如，nfs形式，计算和存储分离，计算设备p完存储设备的盘后，想要用存储设备的cpu扫盘，那存储设备就需要：</span></span><br><span class="line">sudo apt install mesa-opencl-icd</span><br><span class="line">sudo apt-get install clinfo</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>正常情况下，新系统，如上四个步骤就够了。别的诸如cuda、intel什么的，都不需要安装。<br>
+如果第4步实在显示不出信息，而第3步又正常，这种时候建议检查下硬件，逐个排查，深刻的教训。</p>
+<h3 id="1-2-挂载硬盘">1.2 挂载硬盘</h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看空间情况</span></span><br><span class="line">lsblk</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">格式化硬盘</span></span><br><span class="line">sudo mkfs.ext4  /dev/sdb</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建一个目录用于挂载</span></span><br><span class="line">sudo mkdir /data</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">硬盘挂载到目录</span></span><br><span class="line">sudo mount /dev/sdb /data</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">默认情况下，新挂载的硬盘，系统会自动保留5%的空间，为了充分利用这5%空间，可以做如下设置，比如只保留1%：</span></span><br><span class="line">tune2fs -m 0.01 /dev/sdb</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">（可选）这种挂载，系统重启后，就会消失，想要永久挂载，继续如下操作：</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 查看uuid并记录</span></span></span><br><span class="line">blkid /dev/sdb </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 将uuid信息写入文件</span></span></span><br><span class="line">vim /etc/fstab</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 新增内容：</span></span></span><br><span class="line">/dev/disk/by-uuid/&#123;uuid&#125; /data ext4 defaults 0 1</span><br><span class="line"></span><br><span class="line">重启，检查硬盘是否正常</span><br><span class="line">reboot</span><br></pre></td></tr></table></figure>
+<p>测试磁盘读写速度，这个涉及到你扫盘时候面临的问题，因此，你一定要测速，先心里有个底。<br>
+因为扫盘时，要确保你能够在<code>12个小时内扫描结束</code>，为此，你一定要计算好你磁盘读写大小以及你p的文件大小<br>
+这篇文章，针对这个，我专门提醒了3次。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">方式1</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">安装工具</span></span><br><span class="line">sudo apt-get install hdparm</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看磁盘</span></span><br><span class="line">lsblk</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">测试</span></span><br><span class="line">sudo hdparm -Tt /dev/指定磁盘</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">方式2 推荐</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">安装工具</span></span><br><span class="line">apt-get install sysstat</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">测试 5秒一次</span></span><br><span class="line">iostat -dmt /dev/sdb 5</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">方式3</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">直接手动读写几个G文件</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">写</span></span><br><span class="line">time dd if=/dev/zero of=/data/testfile bs=8k count=307200</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">读</span></span><br><span class="line">time dd if=/data/testfile of=/dev/null bs=8k count=307200</span><br></pre></td></tr></table></figure>
+<h3 id="1-3-其余命令汇总">1.3 其余命令汇总</h3>
+<p>下面👇这里我再将我调试期间用到的命令，都汇总一下，方便以后自己查阅，这些命令没必要看，项目也用不到，除非你想了解了解：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">显卡驱动，可前往nvidia官方下载run文件驱动</span></span><br><span class="line">安装驱动</span><br><span class="line">sudo bash xxx.run</span><br><span class="line">卸载驱动</span><br><span class="line">sudo bash xxx.run --uninstall</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">提示apply <span class="built_in">command</span> not found，则安装：</span></span><br><span class="line">apt-get install alsa-utils</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看当前显卡硬件有哪些</span></span><br><span class="line">lspci | grep VGA</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看系统内核</span></span><br><span class="line">ubuntu22.04的默认好像是5.15</span><br><span class="line">uname -r</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看ubuntu的发行版本</span></span><br><span class="line">lsb_release -a</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看apt安装的关于nvidia有哪些</span></span><br><span class="line">apt list --installed | grep nvidia</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查找nvidia驱动</span></span><br><span class="line">sudo apt search nvidia-driver</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">自动安装显卡驱动</span></span><br><span class="line">这会安装很多东西</span><br><span class="line">sudo ubuntu-drivers autoinstall</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">卸载显卡驱动</span></span><br><span class="line">sudo apt-get --purge remove *nvidia*</span><br><span class="line">sudo apt autoremove</span><br><span class="line">sudo apt autoclean</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">卸载cuda</span></span><br><span class="line">sudo apt-get --purge remove &quot;*cublas*&quot; &quot;cuda*&quot;</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">如果以官方的run方式安装的驱动，则可以用安装包来卸载</span></span><br><span class="line">sudo xx.run --unistall</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">其余一些icd支持</span></span><br><span class="line">项目需要的是nvidia-opencl-icd，这个在驱动安装时候，就会自动安装，你也单独安装不了。下面的是我测试期间各种尝试安装的。</span><br><span class="line">最后，你会在/etc/OpenCl/vender/目录中看到各种icd，可以cat看看具体内容</span><br><span class="line"></span><br><span class="line">sudo apt install pocl-opencl-icd</span><br><span class="line">sudo apt install mesa-opencl-icd</span><br><span class="line">sudo apt install ocl-icd-opencl-dev</span><br><span class="line">sudo apt install ocl-icd-libopencl1</span><br><span class="line">sudo apt install opencl-headers</span><br><span class="line">sudo apt install intel-opencl-icd</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">本机名称变更</span></span><br><span class="line">注意同时更改hosts中的本机名称</span><br><span class="line">hostnamectl set-hostname xxx</span><br></pre></td></tr></table></figure>
+<h2 id="2-spacemesh项目文件准备">2. spacemesh项目文件准备</h2>
+<p>下面三个程序，是后面命令要用到的，这个需要预先准备好<br>
+官方工具最新版下载(当然可以自己编译，只要你有精力)：</p>
+<ol>
+<li>钱包工具：<a target="_blank" rel="noopener" href="https://github.com/spacemeshos/smcli/releases">smcli</a></li>
+<li>p盘工具：<a target="_blank" rel="noopener" href="https://github.com/spacemeshos/post/releases">postcli</a></li>
+<li>节点工具：<a target="_blank" rel="noopener" href="https://github.com/spacemeshos/go-spacemesh/releases">spacemesh</a></li>
+</ol>
+<h2 id="3-创建钱包并记录信息">3. 创建钱包并记录信息</h2>
+<p>使用前面准备的<code>smcli</code>程序<br>
+这一过程，一定要记录好自己的账户信息，包括账户地址。后续产生的收益全在这里面了。<br>
+地址后续的配置要用到</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">./smcli wallet create</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">记录复制好钱包地址，后面要用，这里假设钱包地址是：sm1xxxxxxx</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">会显示钱包信息，助记词什么的，还有文件位置都记录好。比如提示的文件位置：xxx/xxx/xxx.json</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">也可以可执行该命令打开文件，获取钱包信息</span></span><br><span class="line">./smcli wallet read xxx/xxx/xxx.json</span><br></pre></td></tr></table></figure>
+<h2 id="4-计算p盘需要的数据">4. 计算p盘需要的数据</h2>
+<ol>
+<li>因为扫盘期间，要确保你能够在<code>12个小时内扫描结束</code>，为此，你一定要计算好你磁盘读写大小以及你p的文件大小，请务必牢记这句话，因为试错成本太高</li>
+<li>使用前面准备的<code>postcli</code>程序，这个过程的目的是计算出你总共要生成多少个文件</li>
+<li>先说下规则：<br>
+<code>SpaceMesh</code>是以<code>numUnits</code>为基本的存储单元，每个<code>numUnits</code>是<code>64G</code>(这个值固定不变)，P好的文件是<code>postdata_xxx.bin</code>格式的文件，文件大小取决于<code>postcli</code>启动时<code>-maxFileSize</code>参数指定的文件大小，默认是<code>4G</code>。</li>
+<li>按我的理解，一个<code>bin文件</code>的大小是64的整数倍，检索什么的效率应该会更高。但还需要考虑个人实际情况。比如你p盘完了，要传输或者拷贝文件，太大了反而成为负担。再比如，你多卡p盘时，想更细力度划分各卡p的范围。具体要多大，自己来衡量吧。</li>
+<li>根据规则，其实我们只需要更改<code>numUnits</code>和<code>-maxFileSize</code>参数即可，计算出最终需要多少文件，是我们最关心的。</li>
+<li>举个例子来解释这个过程：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">比如你要p盘1152G（`需要时64的倍数`，最少需要p盘256G），则`numUnits`=1152/64=`18`，就是说，你总共要p出18个单位（注意，不是文件数量）</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-maxFileSize默认，即4G，不配置，执行命令</span></span><br><span class="line">./postcli -numUnits 18 -printNumFiles</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">此时得到结果288，表示按现有参数最终你磁盘会生成288个4G的文件</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-maxFileSize改为32G，需要折算成字节byte，为34359738368，再次执行命令</span></span><br><span class="line">./postcli -numUnits 18 -maxFileSize=34359738368 -printNumFiles</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">此时得到结果36，表示按现有参数最终你磁盘会生成36个4G的文件，明显比默认值时候，生成的文件小很多</span></span><br></pre></td></tr></table></figure>
+<p>如果你打算多显卡p同一个盘，生成文件的数量一定要记录好，具体后续会做进一步讲解。</p>
+<h2 id="5-单机p盘">5. 单机p盘</h2>
+<p>这个过程分为<code>单机单卡p盘</code>，或者<code>单机多张卡并行p盘</code>。说白了就是，假设你要p个256G，一张卡把256G从头p到尾，还是用多张卡把这256G划分到多张卡上p盘，后者显然效率更高，只要你有条件。<br>
+而<code>单机多张卡并行p盘</code>的实现，是在<code>单机单卡p盘</code>的基础上实现的。<br>
+因此，我们先讲讲如何进行<code>单机单卡p盘</code>。<br>
+<code>注</code>：看懂了<code>单机多张卡并行p盘</code>，那即使显卡不在同一个机器上，也可以用相似方法搞。只是最近传输合并数据会比较麻烦。这个衍生的用法，文中我就不说了，自行探索吧。</p>
+<h3 id="5-1-单机单卡p盘">5.1 单机单卡p盘</h3>
+<p>使用前面准备的<code>go-spacemesh</code>程序<br>
+这个其实很简单，一条命令就够了</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./go-spacemesh --config config.mainnet.json --smeshing-start --smeshing-coinbase sm1xxxxxxx --smeshing-opts-numunits 18 -maxFileSize=34359738368 --smeshing-opts-provider 0 --smeshing-opts-datadir /mnt/spacemesh/post_data --data-folder /mnt/spacemesh/node_data</span><br></pre></td></tr></table></figure>
+<p>解释下：<br>
+<code>--config</code>: 节点配置文件，通过<code>wget https://smapp.spacemesh.network/config.mainnet.json</code> 获取，这个是官方的配置，可视化版本还是程序，都用这同一个配置，看着貌似是创世的配置以及网络节点的配置，具体内容我也没研究；<br>
+<code>--smeshing-start</code>: 启动P盘，如果不加此选项，则只同步节点，不会启动P盘，也不会生成<code>postdata_metadata.json</code>；<br>
+<code>--smeshing-coinbase</code>: 收益地址，sm1开头，通过smcli创建，就是前面让你记录的地址；<br>
+<code>--smeshing-opts-numunits</code>: P盘的单元数量，和前面<code>postcli</code>计算的<code>-numUnits</code>值必须相等；<br>
+<code>--smeshing-opts-maxfilesize</code>: 生成一个文件的大小，不能超过该值，用byte；<br>
+<code>--smeshing-opts-provider</code>: 指定用显卡还是CPU，P盘时用显卡，参数值为显卡ID0、1、2…，比如你用nvidia卡，nvidia-sim命令，返回结果第一列就是ID；<br>
+<code>--smeshing-opts-datadir</code>: P盘文件存储路径；<br>
+<code>--data-folder</code>: 节点文件存储路径；</p>
+<h3 id="5-2-单机多卡p盘">5.2 单机多卡p盘</h3>
+<p>使用前面准备的<code>postcli</code>程序。<br>
+这个原理就是：使用你前面计算的文件数量，根据显卡计算能力，把文件划分给不同的卡去p。比如你算出总共能生成10个文件，编号0到9，3张卡。你可以给计算能力强的0号卡分配前5个文件编号，计算适中的1号卡分配3个文件编号，计算最差的2号卡分配2个文件编号。<br>
+然后配合节点参数，启动p盘</p>
+<h4 id="5-2-1-获取commitmentatxid值">5.2.1 获取commitmentAtxId值</h4>
+<p>该值为提交PoET证明的地址<br>
+<code>单机单卡p盘</code>启动后，新开一个窗口，执行命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./grpcurl -plaintext -d &#x27;&#x27; 127.0.0.1:9092 spacemesh.v1.ActivationService.Highest | jq -r &#x27;.atx.id.id&#x27; |  base64 -d | xxd -p -c 32</span><br></pre></td></tr></table></figure>
+<p>记录下这个输出值，这个值就是后面会用到的<code>-commitmentAtxId</code>值<br>
+此时，就请务必关掉<code>单机单卡p盘</code>运行的程序了</p>
+<p><code>注：</code> grpc下载地址：<a target="_blank" rel="noopener" href="https://github.com/fullstorydev/grpcurl/releases/download/v1.8.7/grpcurl_1.8.7_linux_x86_64.tar.gz">下载</a></p>
+<h4 id="5-2-2-获取id值">5.2.2 获取id值</h4>
+<p>这是节点地址<br>
+执行命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /data/post_data/postdata_metadata.json | jq -r &#x27;.NodeId&#x27; |  base64 -d | xxd -p -c 32</span><br></pre></td></tr></table></figure>
+<p>关于<code>postdata_metadata.json</code>我解释下，<code>单机单卡p盘</code>启动后，会在启动用的参数<code>--smeshing-opts-datadir</code>中生成该文件，还有另一个<code>key</code>文件<br>
+记录下这个输出值，这个值就是后面会用到的<code>-id</code>值<br>
+<code>/mnt/spacemesh/post_data/</code>目录只要保留<code>key</code>和<code>--smeshing-opts-datadir</code>文件，其余的建议都删除掉</p>
+<h4 id="5-2-3-启动p盘">5.2.3 启动p盘</h4>
+<p>获取前面生成的<code>commitmentAtxId</code>和<code>id</code>参数<br>
+比如有3张卡，则：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nohup ./postcli -provider=0 -commitmentAtxId=$&#123;commitmentAtxId&#125; -id=$&#123;id&#125; --smeshing-opts-numunits 18 -maxFileSize=34359738368 -fromFile=0 -toFile=5 -datadir=/mnt/spacemesh/post_data &gt; 0.log &amp;</span><br><span class="line">nohup ./postcli -provider=1 -commitmentAtxId=$&#123;commitmentAtxId&#125; -id=$&#123;id&#125; --smeshing-opts-numunits 18 -maxFileSize=34359738368 -fromFile=6 -toFile=11 -datadir=/mnt/spacemesh/post_data &gt; 1.log &amp;</span><br><span class="line">nohup ./postcli -provider=2 -commitmentAtxId=$&#123;commitmentAtxId&#125; -id=$&#123;id&#125; --smeshing-opts-numunits 18 -maxFileSize=34359738368 -fromFile=12 -toFile=17 -datadir=/mnt/spacemesh/post_data &gt; 2.log &amp;</span><br></pre></td></tr></table></figure>
+<p>其中<code>nohup xxx &gt; 0.log</code> 表示后台运行，同时打印出日志，不想要的话，直接撤了就行</p>
+<p>其余参数我简单解释下：<br>
+<code>--provider</code>: 指定用显卡还是CPU，P盘时用显卡，参数值为显卡ID0、1、2…，比如你用nvidia卡，nvidia-sim命令，返回结果第一列就是ID；<br>
+<code>--commitmentAtxId</code>: 提交PoET证明的地址；<br>
+<code>--id</code>: 节点id；<br>
+<code>--smeshing-opts-numunits</code>: P盘的单元数量，和前面<code>postcli</code>计算的<code>-numUnits</code>值必须相等；<br>
+<code>---maxFileSize</code>: 生成一个文件的大小，不能超过该值，用byte。如果不填，默认一个文件大小4GB，即4294967296；<br>
+<code>---fromFile</code>: 根据p盘原理，选择从哪个文件编号开始p；<br>
+<code>---toFile</code>: 根据p盘原理，选择p到哪个文件编号为止；<br>
+<code>---datadir</code>: p的文件存储的位置，同一台机子，不同卡都可以把文件指向同一个目录，如果每张卡指向不同目录，那到时候合并数据时，你得把不同目录中，最小那个<code>Nonce</code>值变更到合并目录中；</p>
+<p>如果你每张卡p在了不同目录，合并数据时，需要选择不同目录中最小的那个<code>Nonce</code>值，然后替换合并目录中<code>postdata_metadata.json</code>的Nonce值。<br>
+如果每张卡都p在同一目录，就什么也不用操作了，等着p完就行。</p>
+<p>为了简化这个计算过程，避免每张卡计算失误，我开发了个脚本<a target="_blank" rel="noopener" href="https://github.com/bitxx/spacemesh-utils/blob/main/script/multi_thread_p.sh">单机多卡快速部署脚本</a> ，把该脚本放在和<code>postcli</code>程序同一个目录下，直接执行，按照脚本提示完成操作即可。</p>
+<h3 id="5-3-验证">5.3 验证</h3>
+<p>如果因为各种意外，导致P盘中断，是可以继续使用相同命令和参数继续P盘的，程序会自动跳过已经P好的盘。如果p完后，不放心盘是否完整，可以使用下面这个命令验证P盘是否正确：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">/post/data 表示p盘文件的目录，该目录下包含xxx.json和key</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">0.1表示，只验证0.1%的数据，说白了就是只抽取0.1%的数据去验证，毕竟完整验证是很消耗时间的</span></span><br><span class="line">postcli -verify -datadir /post/data -fraction 0.1</span><br></pre></td></tr></table></figure>
+<h3 id="5-4-总结">5.4 总结</h3>
+<p>看懂了<code>单机多张卡并行p盘</code>，那即使显卡不在同一个机器上，也可以用相似方法搞。只是传输合并数据会比较麻烦。这个衍生的用法，文中我就不说了，自行探索吧。</p>
+<h2 id="6-节点同步">6. 节点同步</h2>
+<p>p盘期间，根据我个人经验，建议可以同时启动节点同步，让节点先自行下载同步数据去，要不然等你p完了，还得等待节点同步。<br>
+节点同步的目录，一定是你前面p盘那会儿生成的节点目录。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./go-spacemesh --config config.mainnet.json --data-folder /mnt/spacemesh/node_data</span><br></pre></td></tr></table></figure>
+<h2 id="7-扫盘并提交证明">7. 扫盘并提交证明</h2>
+<p>这个过程，要确保你能够在<code>12个小时内扫描结束</code>，为此，你一定要计算好你磁盘读写大小以及你p的文件大小</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">获取cpu编号</span></span><br><span class="line">./postcli -printProviders</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">开始扫盘</span></span><br><span class="line">./go-spacemesh --config config.mainnet.json --smeshing-start --smeshing-coinbase sm1xxxxxxx --smeshing-opts-numunits 16 --smeshing-opts-provider 4294967295 --smeshing-opts-datadir /data/post_data --data-folder /data/node_data</span><br></pre></td></tr></table></figure>
+<p>执行命令后：<br>
+当出现如下信息表示正在扫描文件（不是扫盘），该信息是你启动扫盘后，很快会出现的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2023-07-23T15:57:24.849+0800	INFO	fb26a.post	initialization: file already initialized	&#123;&quot;node_id&quot;: &quot;fb26a9d2da5626ded24027da14054bf0fbf8886bd7ec4a29d05ee2fdd44edddd&quot;, &quot;module&quot;: &quot;post&quot;, &quot;fileIndex&quot;: 0, &quot;currentNumLabels&quot;: 268435456, &quot;targetNumLabels&quot;: 268435456, &quot;startPosition&quot;: 0&#125;</span><br><span class="line">2023-07-23T15:57:24.849+0800	INFO	fb26a.post	initialization: file already initialized	&#123;&quot;node_id&quot;: &quot;fb26a9d2da5626ded24027da14054bf0fbf8886bd7ec4a29d05ee2fdd44edddd&quot;, &quot;module&quot;: &quot;post&quot;, &quot;fileIndex&quot;: 1, &quot;currentNumLabels&quot;: 268435456, &quot;targetNumLabels&quot;: 268435456, &quot;startPosition&quot;: 268435456&#125;</span><br></pre></td></tr></table></figure>
+<p>当出现如下信息，表示开始生成证明文件，该信息是你启动扫盘后，很快会出现的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2023-07-23T15:57:59.995+0800	INFO	fb26a.post calculating proof of work for nonces 0..144</span><br></pre></td></tr></table></figure>
+<p>等待十来二十分钟，检测磁盘读写，表示已经开始扫了：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iostat -dmt /dev/sdb 5</span><br></pre></td></tr></table></figure>
+<p>当出现如下信息，表示扫描结束，并在<code>post_data</code>目录生成<code>post.bin</code>文件：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2023-07-23T16:07:27.469+0800	INFO	fb26a.post	Found proof for nonce: 110, pow: 54043195528453627 with...</span><br></pre></td></tr></table></figure>
+<p>然后就是漫长的等待纪元时间点，链上自动注册，链上自动二次扫描（确保你没舞弊），获取收益，需要历经14天左右。<br>
+比如出现如下日志表示开始注册：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2023-08-21T07:00:00.743Z	INFO	c9d89.atxBuilder	atx challenge is ready</span><br></pre></td></tr></table></figure>
+<h2 id="参考：">参考：</h2>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://github.com/minerdao/posts/blob/master/spacemesh/cluster-mining-tutorial.md">集群P盘教程</a> <a target="_blank" rel="noopener" href="https://github.com/minerdao/posts/blob/master/spacemesh/cluster-mining-tutorial.md">https://github.com/minerdao/posts/blob/master/spacemesh/cluster-mining-tutorial.md</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/spacemeshos/post/tree/develop/cmd/postcli">显卡P盘脚本</a> <a target="_blank" rel="noopener" href="https://github.com/minerdao/posts/blob/master/spacemesh/cluster-mining-tutorial.md">https://github.com/minerdao/posts/blob/master/spacemesh/cluster-mining-tutorial.md</a></li>
+<li><a target="_blank" rel="noopener" href="https://simeononsecurity.ch/other/efficient-spacemesh-mining-multiple-gpus-guide/#linux">多显卡P盘教程</a> <a target="_blank" rel="noopener" href="https://simeononsecurity.ch/other/efficient-spacemesh-mining-multiple-gpus-guide/#linux">https://simeononsecurity.ch/other/efficient-spacemesh-mining-multiple-gpus-guide/#linux</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/spacemeshos/gpu-post">GPU post</a> <a target="_blank" rel="noopener" href="https://github.com/spacemeshos/gpu-post">https://github.com/spacemeshos/gpu-post</a></li>
+</ol>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/c1eac28e/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spacemesh/" rel="tag">Spacemesh</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/6598a2e5/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            linux中安装代理clash客户端
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/f2ecc7b4/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">ethstats-以太坊生态网络监控工具</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

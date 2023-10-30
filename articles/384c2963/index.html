@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>khala-parachain源码解析(1)-runtime相关依赖汇总 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/phala/khala-parachain源码解析/khala-parachain源码解析(1)-runtime相关依赖汇总"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  khala-parachain源码解析(1)-runtime相关依赖汇总
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/384c2963/" class="article-date">
+  <time datetime="2022-09-28T04:49:08.000Z" itemprop="datePublished">2022-09-28</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Phala/">Phala</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Phala/khala-parachain%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">khala-parachain源码解析</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">2.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">8 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>再三考虑，还是先看下khala-parachain的源码，一个是想通过代码层了解khala的业务运行机制，另一个也是通过该项目，真正了解一个基于substrate的项目是如何实现的。</p>
+<span id="more"></span>  
+<h2 id="1-概述">1. 概述</h2>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://github.com/Phala-Network/khala-parachain">khala-parachain</a> 项目是负责pha的节点部分，用来同步数据以及上层应用的实现（入质押池的实现，委员会、质押人等逻辑）。<br>
+具体的mining逻辑不在该项目中，暂不考虑这部分内容。</li>
+<li>该项目也是基于<a target="_blank" rel="noopener" href="https://github.com/substrate-developer-hub/substrate-node-template">substrate-node-template</a> 模板来实现的，用的比较早的模板，但整体内容基本一致</li>
+<li>runtime模块中，集成了各个需要的依赖，也是项目运行的核心部分</li>
+<li>本文主要讲解runtime中使用到了哪些依赖（如pallet等），通过该内容，对<a target="_blank" rel="noopener" href="https://github.com/Phala-Network/khala-parachain">khala-parachain</a> 的整体结构有个全局的了解，以这个作为切入点，也是一个比较好的选择</li>
+</ol>
+<h2 id="2-依赖讲解">2. 依赖讲解</h2>
+<p>项目的<code>runtime</code>目录中，有<code>khala</code>、<code>phala</code>、<code>rhala</code>等等。这里我们主要关注<code>khala</code>，也就是文件<code>runtime/khala/src/lib.rs</code>。<br>
+该文件中，集成了所需要的各个pallet，包括自定义的、substrate内置的、以及引用的第三方的。<br>
+具体用到了哪些依赖，也可以前往：<code>runtime/khala/Cargo.toml</code>的<code>[dependencies]</code>查看</p>
+<h3 id="2-1-substrate相关依赖">2.1 substrate相关依赖</h3>
+<ol>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_std/index.html">sp-std</a><br>
+宏：<br>
+if_std：只有std启用的时候，才能使用该代码块<br>
+map：创建一个map<br>
+vec：创建一个vec</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_api/index.html">sp-api</a><br>
+宏：<br>
+decl_runtime_apis：用于声明api traits<br>
+impl_runtime_apis：用于实现api traits</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_io/index.html">sp-io</a></p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_version/index.html">sp-version</a><br>
+宏：<br>
+create_apis_vec：创建api声明的集合<br>
+create_runtime_str：用于创建<code>RuntimeString</code>常量<br>
+runtime_version：用作接受运行库的版本声明并生成具有等效内容的自定义WebAssembly节的属性。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_runtime/index.html">sp-runtime</a><br>
+宏：<br>
+bounded_btree_map：从给定的数据创建btree map<br>
+bounded_vec：从给定的数据创建btree vec<br>
+impl_opaque_keys：实现<code>OpaqueKeys</code>来描述数据结构<br>
+parameter_types：用于创建实现了<code>Get</code> trait的类型</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_core/index.html">sp-core</a><br>
+宏：</p>
+<ul>
+<li>map：初始化key value</li>
+<li>RuntimeDebug：调试运行时</li>
+</ul>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_session/index.html">sp-session</a><br>
+session核心</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_offchain/index.html">sp-offchain</a><br>
+用于支持链下操作</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_block_builder/index.html">sp-block-builder</a><br>
+块构建</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sc_transaction_pool/index.html">sp-transaction-pool</a><br>
+交易池的实现</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_inherents/index.html">sp-inherents</a><br>
+固有的外在性是内在地添加到每个块中的外在性。但是，由运行时实现决定是要求每个块的固有函数还是使其可选。固有函数主要用于将数据从块生产者传递到运行时。因此，固有项需要一些在客户端运行的部分和一些在运行时端运行的部分。构造固有项时，固有项所需的任何数据都将作为固有数据从客户端传递到运行时。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_consensus_aura/index.html">sp-consensus-aura</a><br>
+aura底层</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_support/index.html">frame-support</a><br>
+该依赖提供了许多重要的声明、derive、attribute-like、function-like等<br>
+如下几个重要宏需要掌握：</p>
+<ul>
+<li>construct_runtime! 用于从已实现的pallet中构造其运行时</li>
+<li>match_types! 用于创建实现了<code>Contains</code> trait的类型，类似于<code>matches!</code></li>
+<li>parameter_types!  用于创建实现了<code>Get</code> trait的类型</li>
+</ul>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_executive/index.html">frame-executive</a><br>
+通过在运行时将传入的函数调用发送到适当的托盘来编排它们。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_system/index.html">frame-system</a><br>
+官方解释的看不懂，简单说就是pallet的底层，运行时的根基。其中也包含了一些重要的crate，如：sp_core、sp_runtime等</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_system_rpc_runtime_api/index.html">frame-system-rpc-runtime-api</a><br>
+此 API 应由要使用添加系统访问方法的自定义 RPC 扩展的节点的运行时导入和实现。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_system_benchmarking/index.html">frame-system-benchmarking</a></p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_benchmarking/index.html">frame-benchmarking</a><br>
+具体说不来，总之是用于runtime测试</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_try_runtime/index.html">frame-try-runtime</a><br>
+用于测试运行时升级的执行。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_aura/index.html">pallet-aura</a><br>
+aura共识，用于创建块</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_authorship/index.html">pallet-authorship</a><br>
+跟踪当前签名块以及最近的uncles块</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_session/index.html">pallet-session</a><br>
+允许验证器管理其会话密钥，提供更改会话长度的功能，并处理会话轮换。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_balances/index.html">pallet-balances</a><br>
+提供处理帐户和余额的功能。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_randomness_collective_flip/index.html">pallet-randomness-collective-flip</a><br>
+提供可在测试中使用的随机函数，并基于前81个块的块散列生成低影响随机值。建议主要在测试等低安全性情况下使用此托盘作为随机性来源（不建议生产环境使用）。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_timestamp/index.html">pallet-timestamp</a><br>
+提供获取和设置链上时间的功能。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_transaction_payment/index.html">pallet-transaction-payment</a> 和 <a href="">pallet-transaction-payment-rpc-runtime-api</a><br>
+提供计算调度前交易费用的基本逻辑，以及对应的api</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_utility/index.html">pallet-utility</a><br>
+无状态托盘，带有用于调度管理的助手，无需重新验证。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_multisig/index.html">pallet-multisig</a><br>
+启用多重签名</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_proxy/index.html">pallet-proxy</a><br>
+允许帐户向其他帐户授予从其签名的来源调度呼叫类型的权限。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_scheduler/index.html">pallet-scheduler</a><br>
+显示调度调度在指定的块编号或指定的时间段发生的功能。这些调度可以命名或匿名，也可以取消。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_collective/index.html">pallet-collective</a><br>
+允许一组帐户ID通过来自特定来源的调度来表达他们的集体感受。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_membership/index.html">pallet-membership</a><br>
+允许控制一组AccountId的成员身份，这对于管理集体成员身份很有用。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_treasury/index.html">pallet-treasury</a><br>
+提供可由系统中的利益相关者管理的资金储备，以及从该储备中提出支出建议的结构。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_bounties/index.html">pallet-bounties</a><br>
+管理完成指定工作或实现指定目标的奖励。用于奖励<br>
+该pallet需要依赖<a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_treasury/index.html">pallet-treasury</a></p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_child_bounties/index.html">pallet-child-bounties</a><br>
+奖励可以拆分成更小的，需要依赖<a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_treasury/index.html">pallet-treasury</a> 和 <a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_bounties/index.html">pallet-bounties</a></p>
+</li>
+<li>
+<p>pallet-lottery<br>
+配置tickets，使网络参与者能够购买tickets。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_vesting/index.html">pallet-vesting</a><br>
+在帐户的锁定余额上放置线性曲线。该模块确保有一个锁定机制，以防止余额因交易费支付以外的任何原因低于未行权金额。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_identity/index.html">pallet-identity</a><br>
+启用允许从指定来源添加多个注册器的联合命名系统。登记员可以设定提供身份验证服务的费用。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_democracy/index.html">pallet-democracy</a><br>
+提供一个民主系统，用于处理一般利益相关者投票的管理。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_elections_phragmen/index.html">pallet-elections-phragmen</a><br>
+提供基于<a target="_blank" rel="noopener" href="https://wiki.polkadot.network/docs/en/learn-phragmen">phragmen</a> 模型的选举</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_tips/index.html">pallet-tips</a><br>
+小费，该pallet依赖于<a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_treasury/index.html">pallet-treasury</a></p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_preimage/index.html">pallet-preimage</a><br>
+允许用户和运行时在链上存储哈希的preimage。其他pallet可用于存储和管理大字节 Blob。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_assets/index.html">pallet-assets</a><br>
+提供用于处理可替代资产的简单而安全的方法。这个应该是nft用到<br>
+一个简单、安全的模块，用于处理可替代资产。<br>
+资产模块提供固定供应的可替代资产类别的资产管理功能，包括：<br>
+资产发行（铸币）<br>
+资产转让<br>
+资产冻结<br>
+资产销毁（焚烧）<br>
+委托资产转让（“批准API”）</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_uniques/index.html">pallet-uniques</a><br>
+一个简单、安全的模块，用于处理不可替代的内容。</p>
+</li>
+</ol>
+<h3 id="2-2-cumulus相关依赖">2.2 cumulus相关依赖</h3>
+<p><a target="_blank" rel="noopener" href="https://github.com/paritytech/cumulus">cumulus</a> 项目：</p>
+<ol>
+<li>接口文档：<a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_client_collator/index.html">cumulus-doc</a></li>
+<li>Cumulus是 Substrate 的扩展，它可以轻松地将任何 Substrate 构建的运行时变成与 Polkadot 兼容的平行链。</li>
+<li>Cumulus Consensus 是遵循 Polkadot 中继链（即平行链）的 Substrate 共识引擎。这会在内部运行一个 Polkadot 节点，并指示客户端和同步算法遵循、最终确定和视为正确的链。</li>
+</ol>
+<h4 id="2-2-1-依赖">2.2.1 依赖</h4>
+<ol>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/pallet_collator_selection/index.html">pallet-collator-selection</a><br>
+用于管理平行链中的整理器的pallet。“整理器选择”托盘管理平行链的归类器。排序规则不是一项安全活动，并且此托盘不实现任何博弈论机制来满足所选集合的BFT安全假设。<br>
+整理器：平行链块生产者。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_pallet_aura_ext/index.html">cumulus-pallet-aura-ext</a><br>
+aura的扩展，该pallet扩展了基板AuRa托盘，使其与平行链兼容。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_pallet_parachain_system/index.html">cumulus-pallet-parachain-system</a><br>
+底层，包括：<br>
+引入平行链验证数据<br>
+引入传入的向下和横向消息并分派它们<br>
+与中继链协调升级<br>
+平行链输出的通信，例如发送的消息，升级信号等。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_pallet_session_benchmarking/index.html">cumulus-pallet-session-benchmarking</a><br>
+测试</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_primitives_core/index.html">cumulus-primitives-core</a><br>
+核心</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_primitives_timestamp/index.html">cumulus-primitives-timestamp</a><br>
+提供应在平行链的验证阶段使用的固有数据提供程序。它将用于创建固有数据，并将用于检查平行链块内的固有物（在本例中为固有时间戳）。由于我们无法访问运行时中的任何时钟，因此时间戳始终作为运行时的固有时间传递。为了在验证块时检查这一点，我们将使用中继链插槽。由于中继链插槽是从时间戳派生的，因此我们可以通过将其与插槽持续时间混合来轻松地将其转换回时间戳。通过将中继链槽派生的时间戳与时间戳进行比较，我们可以确保平行链时间戳是合理的。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_primitives_utility/index.html">cumulus-primitives-utility</a></p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_pallet_dmp_queue/index.html">cumulus-pallet-dmp-queue</a></p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_pallet_xcmp_queue/index.html">cumulus-pallet-xcmp-queue</a></p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/cumulus/cumulus_pallet_xcm/index.html">cumulus-pallet-xcm</a></p>
+</li>
+</ol>
+<h3 id="2-3-polkadot相关依赖">2.3 polkadot相关依赖</h3>
+<ol>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/polkadot/doc/polkadot_parachain/index.html">polkadot-parachain</a><br>
+波卡平行链所需要的依赖，定义用于创建或验证平行链的基元类型。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/polkadot/doc/polkadot_runtime_common/index.html">polkadot-runtime-common</a><br>
+runtime代码</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/polkadot/doc/xcm/index.html">xcm</a><br>
+跨共识消息格式数据结构。</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/polkadot/doc/xcm_builder/index.html">xcm-builder</a><br>
+用户配置xcm的类型和帮助</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/polkadot/doc/xcm_executor/index.html">xcm-executor</a><br>
+用于配置执行程序的各种trait</p>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://paritytech.github.io/polkadot/doc/pallet_xcm/index.html">pallet-xcm</a><br>
+用于处理 XCM 消息的 pallet</p>
+</li>
+</ol>
+<h3 id="2-4-rmrk相关依赖">2.4 rmrk相关依赖</h3>
+<p>rmrk为波卡生态的元宇宙NFT解决方案：</p>
+<ol>
+<li>
+<p><a href="">pallet-rmrk-core</a></p>
+</li>
+<li>
+<p><a href="">pallet-rmrk-equip</a></p>
+</li>
+<li>
+<p><a href="">pallet-rmrk-market</a></p>
+</li>
+<li>
+<p><a href="">rmrk-traits</a></p>
+</li>
+<li>
+<p><a href="">pallet-rmrk-rpc-runtime-api</a></p>
+</li>
+</ol>
+<h3 id="2-5-自定义的pallet等依赖">2.5 自定义的pallet等依赖</h3>
+<ol>
+<li>
+<p><a href="">assets-registry</a></p>
+</li>
+<li>
+<p><a href="">pallet-parachain-info</a></p>
+</li>
+<li>
+<p><a href="">phala-pallets</a></p>
+</li>
+<li>
+<p><a href="">pallet-mq-runtime-api</a></p>
+</li>
+<li>
+<p><a href="">subbridge-pallets</a></p>
+</li>
+<li>
+<p><a href="">pallet-phala-world</a></p>
+</li>
+</ol>
+<h2 id="3-总结">3. 总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/384c2963/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Phala/" rel="tag">Phala</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/7b9f6214/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            项目十大管理汇总
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/12cad6be/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">pallet进阶(12)-benchmarking</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

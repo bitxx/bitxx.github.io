@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>Rust网络编程(3)-ipnet、mio、pnet、dns和serde介绍 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-basetech/rust/网络编程/Rust网络编程(3)-ipnet、mio、pnet和dns介绍"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  Rust网络编程(3)-ipnet、mio、pnet、dns和serde介绍
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/c3284793/" class="article-date">
+  <time datetime="2022-08-24T06:32:11.000Z" itemprop="datePublished">2022-08-24</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/">基础技术</a> / <a class="article-category-link" href="/categories/%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/rust%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">rust网络编程</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">1.7k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">9 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>ipnet、mio、pnet和dns介绍</p>
+<span id="more"></span> 
+<h2 id="1-ipnet">1. ipnet</h2>
+<p>无类别域间路由<br>
+说白了就是带有掩码管理Ip<br>
+<code>ipnet</code>，更好的管理IP</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> std::net::&#123;Ipv4Addr,Ipv6Addr&#125;;</span><br><span class="line"><span class="keyword">use</span> ipnet::&#123;IpNet, Ipv4Net, Ipv6Net&#125;;</span><br><span class="line"><span class="keyword">use</span> std::<span class="type">str</span>::FromStr;</span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>()<span class="punctuation">-&gt;</span> std::io::<span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_v4</span> = Ipv4Net::<span class="title function_ invoke__">new</span>(Ipv4Addr::<span class="title function_ invoke__">new</span>(<span class="number">10</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">0</span>),<span class="number">24</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_v6</span> = Ipv6Net::<span class="title function_ invoke__">new</span>(Ipv6Addr::<span class="title function_ invoke__">new</span>(<span class="number">0xfd</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>),<span class="number">24</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_v4</span> = Ipv4Net::<span class="title function_ invoke__">from_str</span>(<span class="string">&quot;10.1.1.0/24&quot;</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_v6</span> = Ipv6Net::<span class="title function_ invoke__">from_str</span>(<span class="string">&quot;fd00::/24&quot;</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_v4</span>: Ipv4Net = <span class="string">&quot;10.1.1.0/24&quot;</span>.<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_v6</span>: Ipv6Net = <span class="string">&quot;fd00::/24&quot;</span>.<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_net</span> = IpNet::<span class="title function_ invoke__">from</span>(_v4);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">_net</span> = IpNet::<span class="title function_ invoke__">from_str</span>(<span class="string">&quot;10.1.1.0/24&quot;</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">net</span>: IpNet = <span class="string">&quot;10.1.1.0/24&quot;</span>.<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;, hostmask = &#123;&#125;&quot;</span>,net,net.<span class="title function_ invoke__">hostmask</span>());</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;, netmask = &#123;&#125;&quot;</span>,net,net.<span class="title function_ invoke__">netmask</span>());</span><br><span class="line"></span><br><span class="line">    <span class="built_in">assert_eq!</span>(<span class="string">&quot;192.168.12.34/16&quot;</span>.parse::&lt;IpNet&gt;().<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">trunc</span>(),<span class="string">&quot;192.168.0.0/16&quot;</span>.<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>());</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="2-mio">2. mio</h2>
+<p>通俗的说，就是异步网络IO框架，可以理解为是个消息队列(类似golang中的nsq)<br>
+mio是rust实现的一个轻量级的I/O库。其实现基本上就是对不同操作系统底层相关API的封装，抽象出统一的接口供上层使用。<br>
+重要特性：<br>
+非阻塞TCP，UDP<br>
+I/O事件通知epoll,kqeue,IOCP实现<br>
+运行时零分配<br>
+平台可扩展<br>
+引入依赖：<code>mio=&#123;version=&quot;0.7.0&quot;,features=[&quot;os-poll&quot;,&quot;tcp&quot;]&#125;</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> mio::net::&#123;TcpListener, TcpStream&#125;;</span><br><span class="line"><span class="keyword">use</span> mio::&#123;Events,Interest,Poll,Token&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> SERVER: Token = <span class="title function_ invoke__">Token</span>(<span class="number">0</span>);</span><br><span class="line"><span class="keyword">const</span> CLIENT: Token = <span class="title function_ invoke__">Token</span>(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span>std::io::<span class="type">Result</span>&lt;()&gt;&#123;</span><br><span class="line">    <span class="comment">//服务器端</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">poll</span> = Poll::<span class="title function_ invoke__">new</span>()?;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">events</span> = Events::<span class="title function_ invoke__">with_capacity</span>(<span class="number">128</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">addr</span> = <span class="string">&quot;127.0.0.1:8080&quot;</span>.<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">server</span> = TcpListener::<span class="title function_ invoke__">bind</span>(addr)?;</span><br><span class="line">    poll.<span class="title function_ invoke__">registry</span>().<span class="title function_ invoke__">register</span>(&amp;<span class="keyword">mut</span> server,SERVER,Interest::READABLE)?;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">//客户端</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">client</span> = TcpStream::<span class="title function_ invoke__">connect</span>(addr)?;</span><br><span class="line">    poll.<span class="title function_ invoke__">registry</span>().<span class="title function_ invoke__">register</span>(&amp;<span class="keyword">mut</span> client,CLIENT,Interest::READABLE |Interest::WRITABLE)?;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">loop</span>&#123;</span><br><span class="line">        poll.<span class="title function_ invoke__">poll</span>(&amp;<span class="keyword">mut</span> events,<span class="literal">None</span>)?;</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">event</span> <span class="keyword">in</span> events.<span class="title function_ invoke__">iter</span>()&#123;</span><br><span class="line">            <span class="keyword">match</span> event.<span class="title function_ invoke__">token</span>()&#123;</span><br><span class="line">                SERVER =&gt;&#123; </span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">connection</span> = server.<span class="title function_ invoke__">accept</span>();</span><br><span class="line">                    <span class="built_in">println!</span>(<span class="string">&quot;SERVER recv a connection!&quot;</span>);</span><br><span class="line">                    <span class="title function_ invoke__">drop</span>(connection);</span><br><span class="line">                &#125;</span><br><span class="line">                CLIENT =&gt;&#123;</span><br><span class="line">                    <span class="keyword">if</span> event.<span class="title function_ invoke__">is_writable</span>()&#123;</span><br><span class="line">                        <span class="built_in">println!</span>(<span class="string">&quot;Client write&quot;</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">if</span> event.<span class="title function_ invoke__">is_readable</span>()&#123;</span><br><span class="line">                        <span class="built_in">println!</span>(<span class="string">&quot;Client read&quot;</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">return</span> <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">                &#125;</span><br><span class="line">                _ =&gt; <span class="built_in">unreachable!</span>(),</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-pnet">3 pnet</h2>
+<p>为Rust提供一组跨平台的底层网络API<br>
+案例：监听网卡信息（数据从本地传到哪里）<br>
+以下代码执行后，需要sudo才能读取网卡信息。<br>
+cargo传入参数：<code>cargo run -- en0</code>，传入网卡名称<br>
+执行时，需要到debug找到二进制文件，并sudo执行：sudo ./use_pnet en0</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> pnet::datalink::Channel::Ethernet;</span><br><span class="line"><span class="keyword">use</span> pnet::datalink::&#123;<span class="keyword">self</span>, NetworkInterface&#125;;</span><br><span class="line"><span class="keyword">use</span> pnet::packet::ethernet::&#123;EthernetPacket, EtherTypes&#125;;</span><br><span class="line"><span class="keyword">use</span> pnet::packet::ip::IpNextHeaderProtocols;</span><br><span class="line"><span class="keyword">use</span> pnet::packet::ipv4::Ipv4Packet;</span><br><span class="line"><span class="keyword">use</span> pnet::packet::tcp::TcpPacket;</span><br><span class="line"><span class="keyword">use</span> pnet::packet::Packet;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> std::env;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="comment">//终端输入的网卡名称</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">interface_name</span> = env::<span class="title function_ invoke__">args</span>().<span class="title function_ invoke__">nth</span>(<span class="number">1</span>).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//获取网卡列表</span></span><br><span class="line">    <span class="comment">//判断网卡列表里是否有终端输入的网卡名称</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">interfaces</span> = datalink::<span class="title function_ invoke__">interfaces</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">interface</span> = interfaces</span><br><span class="line">        .<span class="title function_ invoke__">into_iter</span>()</span><br><span class="line">        .<span class="title function_ invoke__">filter</span>(|iface: &amp;NetworkInterface| iface.name == interface_name)</span><br><span class="line">        .<span class="title function_ invoke__">next</span>()</span><br><span class="line">        .<span class="title function_ invoke__">expect</span>(<span class="string">&quot;Error get interface&quot;</span>);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>,interface);</span><br><span class="line">    <span class="comment">//_tx 接收（忽略） rx 发送（该案例关注）</span></span><br><span class="line">    <span class="keyword">let</span> (_tx, <span class="keyword">mut</span> rx) = <span class="keyword">match</span> datalink::<span class="title function_ invoke__">channel</span>(&amp;interface, <span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>()) &#123;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(<span class="title function_ invoke__">Ethernet</span>(tx, rx)) =&gt; (tx, rx),</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(_) =&gt; <span class="built_in">panic!</span>(<span class="string">&quot;Other&quot;</span>),</span><br><span class="line">        <span class="title function_ invoke__">Err</span>(e) =&gt; <span class="built_in">panic!</span>(<span class="string">&quot;error:&#123;&#125;&quot;</span>, e),</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="comment">//读取从网卡发送消息</span></span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">match</span> rx.<span class="title function_ invoke__">next</span>() &#123;</span><br><span class="line">            <span class="title function_ invoke__">Ok</span>(packet) =&gt; &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">packet</span> = EthernetPacket::<span class="title function_ invoke__">new</span>(packet).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">                <span class="title function_ invoke__">handle_packet</span>(&amp;packet);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="title function_ invoke__">Err</span>(e) =&gt; &#123;</span><br><span class="line">                <span class="built_in">println!</span>(<span class="string">&quot;Some error: &#123;&#125;&quot;</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">handle_packet</span>(ethernet: &amp;EthernetPacket) &#123;</span><br><span class="line">    <span class="keyword">match</span> ethernet.<span class="title function_ invoke__">get_ethertype</span>() &#123;</span><br><span class="line">        EtherTypes::Ipv4 =&gt; &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">header</span> = Ipv4Packet::<span class="title function_ invoke__">new</span>(ethernet.<span class="title function_ invoke__">payload</span>());</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(header) = header &#123;</span><br><span class="line">                <span class="keyword">match</span> header.<span class="title function_ invoke__">get_next_level_protocol</span>() &#123;</span><br><span class="line">                    IpNextHeaderProtocols::Tcp =&gt; &#123;</span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">tcp</span> = TcpPacket::<span class="title function_ invoke__">new</span>(header.<span class="title function_ invoke__">payload</span>());</span><br><span class="line">                        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(tcp) = tcp &#123;</span><br><span class="line">                            <span class="comment">//消息从哪块发送到哪块</span></span><br><span class="line">                            <span class="built_in">println!</span>(<span class="string">&quot;Tcp packet &#123;&#125;:&#123;&#125; to &#123;&#125;:&#123;&#125;&quot;</span>, header.<span class="title function_ invoke__">get_source</span>(), tcp.<span class="title function_ invoke__">get_source</span>(), header.<span class="title function_ invoke__">get_destination</span>(), tcp.<span class="title function_ invoke__">get_destination</span>());</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    _ =&gt; <span class="built_in">println!</span>(<span class="string">&quot;ignore&quot;</span>),</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        _ =&gt; <span class="built_in">println!</span>(<span class="string">&quot;ignore&quot;</span>),</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4-dns">4 dns</h2>
+<p>依赖库：<br>
+trust-dns-resolver = “0.11.0”<br>
+trust-dns = “0.16.0”</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> std::env;</span><br><span class="line"><span class="keyword">use</span> trust_dns_resolver::Resolver;</span><br><span class="line"><span class="keyword">use</span> trust_dns_resolver::config::*;</span><br><span class="line"><span class="keyword">use</span> trust_dns::rr::record_type::RecordType;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">args</span>: <span class="type">Vec</span>&lt;<span class="type">String</span>&gt; = env::<span class="title function_ invoke__">args</span>().<span class="title function_ invoke__">collect</span>();</span><br><span class="line">    <span class="keyword">if</span> args.<span class="title function_ invoke__">len</span>() != <span class="number">2</span> &#123;</span><br><span class="line">        <span class="built_in">eprintln!</span>(<span class="string">&quot;Please provide a name to query!&quot;</span>);</span><br><span class="line">        std::process::<span class="title function_ invoke__">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">query</span> = <span class="built_in">format!</span>(<span class="string">&quot;&#123;&#125;.&quot;</span>, args[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">//默认方式配置解析器</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;use default:&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">resolver</span> = Resolver::<span class="title function_ invoke__">new</span>(ResolverConfig::<span class="title function_ invoke__">default</span>(), ResolverOpts::<span class="title function_ invoke__">default</span>()).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">response</span> = resolver.<span class="title function_ invoke__">lookup_ip</span>(query.<span class="title function_ invoke__">as_str</span>());</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">ans</span> <span class="keyword">in</span> response.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;&quot;</span>, ans);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//从系统文件配置解析器</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot; &quot;</span>);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;use system:&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">resolver</span> = Resolver::<span class="title function_ invoke__">from_system_conf</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">response</span> = resolver.<span class="title function_ invoke__">lookup_ip</span>(query.<span class="title function_ invoke__">as_str</span>());</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">ans</span> <span class="keyword">in</span> response.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;&quot;</span>, ans);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot; &quot;</span>);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;use ns:&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ns</span> = resolver.<span class="title function_ invoke__">lookup</span>(query.<span class="title function_ invoke__">as_str</span>(),RecordType::NS);</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">ans</span> <span class="keyword">in</span> response.<span class="title function_ invoke__">iter</span>() &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;&quot;</span>, ans);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="5-serde">5. serde</h2>
+<p>serde crate 是 Serde 生态的核心。<br>
+serde_derive crate 提供必要的工具，<br>
+使用过程宏来派生 Serialize 和 Deserialize。<br>
+但是serde只提供序列化和反序列化的框架，具体的操作还需要依赖具体的包：如serde_json和serde_yaml等。</p>
+<h3 id="5-1-基本使用">5.1 基本使用</h3>
+<p>依赖：<br>
+serde = { version = “1.0.106”, features = [“derive”] }<br>
+serde_json = “1.0”<br>
+serde_yaml = “0.8”</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> serde::&#123;Serialize,Deserialize&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Debug,Serialize,Deserialize)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">ServerConfig</span>&#123;</span><br><span class="line">    workers:<span class="type">u64</span>,</span><br><span class="line">    ignore:<span class="type">bool</span>,</span><br><span class="line">    auth_server:<span class="type">Option</span>&lt;<span class="type">String</span>&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">config</span> = ServerConfig&#123;</span><br><span class="line">        workers:<span class="number">100</span>,</span><br><span class="line">        ignore:<span class="literal">false</span>,</span><br><span class="line">        auth_server:<span class="title function_ invoke__">Some</span>(<span class="string">&quot;auth.server.io&quot;</span>.<span class="title function_ invoke__">to_string</span>())</span><br><span class="line">    &#125;;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;json:&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">serialized</span> = serde_json::<span class="title function_ invoke__">to_string</span>(&amp;config).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;serialized:&#123;&#125;&quot;</span>,serialized);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">deserialized</span>: ServerConfig = serde_json::<span class="title function_ invoke__">from_str</span>(&amp;serialized).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;deserialized: &#123;:#?&#125;&quot;</span>,deserialized);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;yaml:&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">serialized</span> = serde_yaml::<span class="title function_ invoke__">to_string</span>(&amp;config).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;serialized:&#123;&#125;&quot;</span>,serialized);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">deserialized</span>: ServerConfig = serde_yaml::<span class="title function_ invoke__">from_str</span>(&amp;serialized).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;deserialized: &#123;:#?&#125;&quot;</span>,deserialized);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="5-2-serde网络编程中的应用">5.2 serde网络编程中的应用</h3>
+<p>服务器端代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> serde::&#123;Deserialize, Serialize&#125;;</span><br><span class="line"><span class="keyword">use</span> serde_json;</span><br><span class="line"><span class="keyword">use</span> std::io::&#123;<span class="keyword">self</span>, prelude::*, BufReader, Write&#125;;</span><br><span class="line"><span class="keyword">use</span> std::net::&#123;TcpListener, TcpStream&#125;;</span><br><span class="line"><span class="keyword">use</span> std::&#123;thread,<span class="type">str</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Debug,Serialize,Deserialize)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Point3D</span> &#123;</span><br><span class="line">    x: <span class="type">u32</span>,</span><br><span class="line">    y: <span class="type">u32</span>,</span><br><span class="line">    z: <span class="type">u32</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">handle_client</span>(stream:TcpStream)<span class="punctuation">-&gt;</span>io::<span class="type">Result</span>&lt;()&gt;&#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Incoming connection from: &#123;&#125;&quot;</span>,stream.<span class="title function_ invoke__">peer_addr</span>()?);</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">data</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">stream</span> = BufReader::<span class="title function_ invoke__">new</span>(stream);</span><br><span class="line">    <span class="keyword">loop</span>&#123;</span><br><span class="line">        data.<span class="title function_ invoke__">clear</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">bytes_read</span> = stream.<span class="title function_ invoke__">read_until</span>(<span class="string">b&#x27;\n&#x27;</span>,&amp;<span class="keyword">mut</span> data)?;</span><br><span class="line">        <span class="keyword">if</span> bytes_read==<span class="number">0</span>&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">Ok</span>(());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">input</span>:Point3D = serde_json::<span class="title function_ invoke__">from_slice</span>(&amp;data)?;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">value</span> = input.x.<span class="title function_ invoke__">pow</span>(<span class="number">2</span>)+input.y.<span class="title function_ invoke__">pow</span>(<span class="number">2</span>)+input.z.<span class="title function_ invoke__">pow</span>(<span class="number">2</span>);</span><br><span class="line">        stream.<span class="title function_ invoke__">get_mut</span>().<span class="title function_ invoke__">write</span>(&amp;(serde_json::<span class="title function_ invoke__">to_vec</span>(&amp;(<span class="type">f64</span>::<span class="title function_ invoke__">from</span>(value).<span class="title function_ invoke__">sqrt</span>()))?))?;</span><br><span class="line">        stream.<span class="title function_ invoke__">get_mut</span>().<span class="title function_ invoke__">write</span>(&amp;(<span class="string">&quot;\n&quot;</span>.<span class="title function_ invoke__">as_bytes</span>()))?;</span><br><span class="line">        stream.<span class="title function_ invoke__">get_mut</span>().<span class="title function_ invoke__">flush</span>()?;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span>std::io::<span class="type">Result</span>&lt;()&gt;&#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">listener</span> = TcpListener::<span class="title function_ invoke__">bind</span>(<span class="string">&quot;0.0.0.0:8080&quot;</span>)?;</span><br><span class="line">    <span class="keyword">for</span> <span class="variable">stream</span> <span class="keyword">in</span> listener.<span class="title function_ invoke__">incoming</span>()&#123;</span><br><span class="line">        <span class="keyword">match</span> stream&#123;</span><br><span class="line">            <span class="title function_ invoke__">Err</span>(e) =&gt; <span class="built_in">eprintln!</span>(<span class="string">&quot;error: &#123;&#125;&quot;</span>,e),</span><br><span class="line">            <span class="title function_ invoke__">Ok</span>(stream)=&gt;&#123;</span><br><span class="line">                thread::<span class="title function_ invoke__">spawn</span>(<span class="keyword">move</span> ||&#123;</span><br><span class="line">                    <span class="title function_ invoke__">handle_client</span>(stream).<span class="title function_ invoke__">unwrap_or_else</span>(|error|<span class="built_in">eprintln!</span>(<span class="string">&quot;error:&#123;&#125;&quot;</span>,error));</span><br><span class="line">                &#125;);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>客户端代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> serde::&#123;Deserialize, Serialize&#125;;</span><br><span class="line"><span class="keyword">use</span> serde_json;</span><br><span class="line"><span class="keyword">use</span> std::io::&#123;<span class="keyword">self</span>, prelude::*, BufReader, Write&#125;;</span><br><span class="line"><span class="keyword">use</span> std::net::&#123;TcpStream&#125;;</span><br><span class="line"><span class="keyword">use</span> std::&#123;<span class="type">str</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Debug, Serialize, Deserialize)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Point3D</span> &#123;</span><br><span class="line">    x: <span class="type">u32</span>,</span><br><span class="line">    y: <span class="type">u32</span>,</span><br><span class="line">    z: <span class="type">u32</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> std::io::<span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">stream</span> = TcpStream::<span class="title function_ invoke__">connect</span>(<span class="string">&quot;127.0.0.1:8080&quot;</span>)?;</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//写数据给服务器端</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">input</span> = <span class="type">String</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">buffer</span>: <span class="type">Vec</span>&lt;<span class="type">u8</span>&gt; = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">        io::<span class="title function_ invoke__">stdin</span>().<span class="title function_ invoke__">read_line</span>(&amp;<span class="keyword">mut</span> input).<span class="title function_ invoke__">expect</span>(<span class="string">&quot;Failed to read from stdin&quot;</span>);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">parts</span>: <span class="type">Vec</span>&lt;&amp;<span class="type">str</span>&gt; = input.<span class="title function_ invoke__">trim_matches</span>(<span class="string">&#x27;\n&#x27;</span>).<span class="title function_ invoke__">split</span>(<span class="string">&#x27;,&#x27;</span>).<span class="title function_ invoke__">collect</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">point</span> = Point3D &#123;</span><br><span class="line">            x: parts[<span class="number">0</span>].<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>(),</span><br><span class="line">            y: parts[<span class="number">1</span>].<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>(),</span><br><span class="line">            z: parts[<span class="number">2</span>].<span class="title function_ invoke__">parse</span>().<span class="title function_ invoke__">unwrap</span>(),</span><br><span class="line">        &#125;;</span><br><span class="line">        stream.<span class="title function_ invoke__">write_all</span>(serde_json::<span class="title function_ invoke__">to_string</span>(&amp;point).<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">as_bytes</span>()).<span class="title function_ invoke__">expect</span>(<span class="string">&quot;Failed to write&quot;</span>);</span><br><span class="line">        stream.<span class="title function_ invoke__">write_all</span>(<span class="string">b&quot;\n&quot;</span>)?; <span class="comment">//已传递给服务器端</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">//从服务器端读数据</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">reader</span> = BufReader::<span class="title function_ invoke__">new</span>(&amp;stream);</span><br><span class="line">        reader.<span class="title function_ invoke__">read_until</span>(<span class="string">b&#x27;\n&#x27;</span>, &amp;<span class="keyword">mut</span> buffer)?;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">input</span> = <span class="type">str</span>::<span class="title function_ invoke__">from_utf8</span>(&amp;buffer).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="keyword">if</span> input == <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">            <span class="built_in">eprintln!</span>(<span class="string">&quot;Empty response&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Respnse:&#123;&#125;&quot;</span>, input);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结">总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/c3284793/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/rust%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" rel="tag">rust网络编程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BC%80%E5%8F%91%E8%AF%AD%E8%A8%80/" rel="tag">开发语言</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/db58bc7/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            Rust网络编程(4)-构建脚本
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/d368fb2c/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Rust网络编程(2)-IpAddr和SocketAddr使用</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

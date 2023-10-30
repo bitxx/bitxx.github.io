@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>solidity教程(2)-高级 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/ethereum/solidity/solidity教程(2)-高级"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  solidity教程(2)-高级
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/3f51919a/" class="article-date">
+  <time datetime="2022-12-12T10:05:28.000Z" itemprop="datePublished">2022-12-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/%E4%BB%A5%E5%A4%AA%E5%9D%8A/">以太坊</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/%E4%BB%A5%E5%A4%AA%E5%9D%8A/solidity/">solidity</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">4.6k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">21 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>solidity教程-高级，基于<code>8.0</code>版本</p>
+<span id="more"></span>
+<h2 id="1-概述">1. 概述</h2>
+<ol>
+<li>私有变量比公开变量节省gas</li>
+</ol>
+<h2 id="2-两个合约之间的调用">2. 两个合约之间的调用</h2>
+<h3 id="2-1-一个项目中两个合约通过引用实现">2.1 一个项目中两个合约通过引用实现</h3>
+<p>两个合约各自发布，然后通过地址调用不同合约，下方是<code>CallTestContract</code>调用<code>TestContract</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line"></span><br><span class="line">contract CallTestContract&#123;</span><br><span class="line">    function setX(TestContract _test,uint _x) external&#123;</span><br><span class="line">        _test.setX(_x);</span><br><span class="line">    &#125;</span><br><span class="line">    function getX(address _test) external view returns (uint)&#123;</span><br><span class="line">        return TestContract(_test).getX();</span><br><span class="line">    &#125;</span><br><span class="line">    function setXandSendEther(address _test,uint _x) external payable&#123;</span><br><span class="line">        TestContract(_test).setXandReceiveEther&#123;value: msg.value&#125;(_x);</span><br><span class="line">    &#125;</span><br><span class="line">    function getXandValue(address _test) external view returns (uint x, uint value)&#123;</span><br><span class="line">        (x, value) = TestContract(_test).getXandValue();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract TestContract&#123;</span><br><span class="line">    uint public x;</span><br><span class="line">    uint public value = 123;</span><br><span class="line">    function setX(uint _x) external&#123;</span><br><span class="line">        x = _x;</span><br><span class="line">    &#125;</span><br><span class="line">    function getX() external view returns (uint)&#123;</span><br><span class="line">        return x;</span><br><span class="line">    &#125;</span><br><span class="line">    function setXandReceiveEther(uint _x) external payable&#123;</span><br><span class="line">        x = _x;</span><br><span class="line">        value = msg.value;</span><br><span class="line">    &#125;</span><br><span class="line">    function getXandValue() external view returns (uint,uint)&#123;</span><br><span class="line">        return(x,value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-两个项目中两个合约通过接口实现">2.2 两个项目中两个合约通过接口实现</h3>
+<p>知道要调用的合约，抽象出其中的接口，传入要调用的合约地址<br>
+先单独部署Counter合约</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract Counter&#123;</span><br><span class="line">    uint public count;</span><br><span class="line">    function inc() external&#123;</span><br><span class="line">        count += 1;</span><br><span class="line">    &#125;</span><br><span class="line">    function dec() external&#123;</span><br><span class="line">        count -= 1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再部署带有接口的合约，用来间接调用Counter合约</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">interface ICounter&#123;</span><br><span class="line">    function count() external view returns (uint);</span><br><span class="line">    function inc() external;</span><br><span class="line">&#125;</span><br><span class="line">contract CallTestContract&#123;</span><br><span class="line">    uint public count;</span><br><span class="line">    function examples(address _counter) external &#123;</span><br><span class="line">        ICounter(_counter).inc();</span><br><span class="line">        count = ICounter(_counter).count();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-3-使用call调用不同合约">2.3 使用call调用不同合约</h3>
+<p>先发布<code>TestCall</code>合约，再发布<code>Call</code>合约；<br>
+用<code>Call</code>合约通过地址和call调用<code>TestCall</code>合约</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract TestCall&#123;</span><br><span class="line">    string public message;</span><br><span class="line">    uint public x;</span><br><span class="line">    event Log(string message);</span><br><span class="line">    //调用不存在的合约，会触发该方法</span><br><span class="line">    fallback() external payable&#123;</span><br><span class="line">        emit Log(&quot;fallback was called&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    function foo(string memory _message,uint _x) external payable returns(bool,uint)&#123;</span><br><span class="line">        message = _message;</span><br><span class="line">        x = _x;</span><br><span class="line">        return (true,999);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract Call&#123;</span><br><span class="line">    bytes public data;</span><br><span class="line">    function callFoo(address _test) external payable&#123;</span><br><span class="line">        (bool success,bytes memory _data)=_test.call&#123;value:111,gas:5000&#125;(</span><br><span class="line">            abi.encodeWithSignature(</span><br><span class="line">                &quot;foo(string,uint256)&quot;,&quot;call foo&quot;,123</span><br><span class="line">            )</span><br><span class="line">        );</span><br><span class="line">        require(success,&quot;call failed&quot;);</span><br><span class="line">        data = _data; </span><br><span class="line">    &#125;</span><br><span class="line">    //调用不存在的合约</span><br><span class="line">    function callDoesNotExit(address _test) external&#123;</span><br><span class="line">        (bool success,)=_test.call&#123;value:111,gas:5000&#125;(abi.encodeWithSignature(&quot;doesNotExist()&quot;));</span><br><span class="line">        require(success,&quot;call failed&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-4-通过委托delegatecall调用不同合约">2.4 通过委托delegatecall调用不同合约</h3>
+<p>适用于升级合约。<br>
+<code>DelegateCall合约</code>通过delegatecall只是借用了<code>TestDelegateCall合约</code>中的逻辑，并没有改变<code>TestDelegateCall合约</code>中任何参数值。<br>
+被调用的<code>TestDelegateCall合约</code>，参数变量结构一定要与<code>DelegateCall合约</code>的一致，否则调用会出现问题。（当然，在相同结构的情况下，在被调用的<code>TestDelegateCall合约</code>之后追加内容是可以的，但还是不建议，以防出了问题找不到原因）</p>
+<p>另外，通过委托调用，msg.sender会始终为调用人的地址</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line"></span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line"></span><br><span class="line">contract TestDelegateCall&#123;</span><br><span class="line">    uint public num;</span><br><span class="line">    address public sender;</span><br><span class="line">    uint public value;</span><br><span class="line">    function setVars(uint _num) external payable&#123;</span><br><span class="line">        num = _num;</span><br><span class="line">        sender = msg.sender;</span><br><span class="line">        value = msg.value;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract DelegateCall&#123;</span><br><span class="line">    uint public num;</span><br><span class="line">    address public sender;</span><br><span class="line">    uint public value;</span><br><span class="line">    //通过delegatecall调用TestDelegateCall，只会修改了当前合约DelegateCall的变量值，但不会修改TestDelegateCall中num的值</span><br><span class="line">    //也就是说，通过delegatecall只是借用了TestDelegateCall中的逻辑，并没有改变其中任何值</span><br><span class="line">    //此种方式，需要TestDelegateCall中的结构和变量参数需要与DelegateCall中的保持一致。</span><br><span class="line">    function setVars(address _test,uint _num) external payable&#123;</span><br><span class="line">       (bool success,bytes memory data) = _test.delegatecall(abi.encodeWithSelector(TestDelegateCall.setVars.selector,_num));</span><br><span class="line">       require(success,&quot;delegatecall failed&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-5-通过工厂模式调用合约">2.5 通过工厂模式调用合约</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract Account&#123;</span><br><span class="line">    address public bank;</span><br><span class="line">    address public owner;</span><br><span class="line">    constructor(address _owner) payable&#123;</span><br><span class="line">        bank = msg.sender;</span><br><span class="line">        owner = _owner;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract AccountFactory&#123;</span><br><span class="line">    Account[] public accounts;</span><br><span class="line">    function createAccount(address _owner) external payable&#123;</span><br><span class="line">        Account account = new Account&#123;value: 111&#125;(_owner);</span><br><span class="line">        accounts.push(account);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-6-调用库合约">2.6 调用库合约</h3>
+<p>用于节约代码量<br>
+涉及到<code>using AContract for type</code>的使用，该功能可以将<code>AContract库合约</code>中的方法赋予给<code>type数据类型</code>使用，提高使用效率</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">library Math&#123;</span><br><span class="line">    function max(uint x, uint y) internal pure returns (uint)&#123;</span><br><span class="line">        return x &gt;= y ? x : y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract Test&#123;</span><br><span class="line">    function testMax(uint x, uint y) external pure returns (uint)&#123;</span><br><span class="line">        return Math.max(x,y);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">library ArrayLib&#123;</span><br><span class="line">    function find(uint[] storage arr, uint x) internal view returns (uint)&#123;</span><br><span class="line">        for(uint i=0;i&lt;arr.length;i++)&#123;</span><br><span class="line">            if (arr[i]==x)&#123;</span><br><span class="line">                return i;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        revert(&quot;not found&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract TestArray&#123;</span><br><span class="line">    using ArrayLib for uint[];  //将库合约中的方法赋予给了uint[]</span><br><span class="line">    uint[] public arr = [3,2,1];</span><br><span class="line">    function testFind() external view returns (uint i)&#123;</span><br><span class="line">        return arr.find(2);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-哈希运算和验证签名">3. 哈希运算和验证签名</h2>
+<h2 id="3-1-hash生成">3.1 hash生成</h2>
+<p>这个注意encodePacked和encode的区别：<br>
+encodePacked压缩了结果，容易造成hash碰撞，因此使用它对两个字符串进行hash时，最好在两个字符串之间加入一个数字。<br>
+<code>注：</code>关于哈希碰撞，<code>aa aaa</code>的压缩和<code>a aaaa</code>的压缩使用encodePacked的压缩结果是一样的，造成了碰撞</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line"></span><br><span class="line">//通常用于签名或者获取特定Id时，会用到hash</span><br><span class="line">//合约中，hash值是个32位定长的bytes</span><br><span class="line">contract HashFunc&#123;</span><br><span class="line">    //encodePacked打包会压缩</span><br><span class="line">    function hash(string memory text,uint num,address addr) external pure returns (bytes32)&#123; </span><br><span class="line">        //正常签名，一般需要三个参数，按如下格式传入</span><br><span class="line">        //中间加入num，是为了隔开text和addr，防止因encodePacked压缩结果造成的hash碰撞</span><br><span class="line">        return keccak256(abi.encodePacked(text,num,addr));</span><br><span class="line">    &#125;</span><br><span class="line">    //不压缩结果，返回不定长,会补0</span><br><span class="line">    function encode(string memory text0,string memory text1) external pure returns (bytes memory)&#123;</span><br><span class="line">        return abi.encode(text0,text1);</span><br><span class="line">    &#125;</span><br><span class="line">    //压缩结果，会去掉0，容易产生hash碰撞</span><br><span class="line">    function encodePacked(string memory text0,string memory text1) external pure returns (bytes memory)&#123;</span><br><span class="line">        return abi.encodePacked(text0,text1);</span><br><span class="line">    &#125;</span><br><span class="line">    //直接使用encodePacked生成的hash，容易发生碰撞。解决方式：</span><br><span class="line">    //1. 使用encode，但gas消耗会多</span><br><span class="line">    //2. 依旧使用encodePacked，但在text0和text1之间加一个数字num参数，相当于使用三个参数生成hash</span><br><span class="line">    function collision(string memory text0,string memory text1) external pure returns (bytes32)&#123;</span><br><span class="line">        return keccak256(abi.encodePacked(text0,text1));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-验证签名">3.2 验证签名</h3>
+<p>签名流程：</p>
+<ol>
+<li>将消息签名</li>
+<li>将签名后的消息进行hash</li>
+<li>将签名并且hash后的消息和私钥进行签名 该行为是链下操作</li>
+<li>ecrecover(hash(message),signature)==signer 恢复签名。ecrecover通过hash后的消息和链下签名恢复地址，检查地址是否为期望地址</li>
+</ol>
+<p>以下为用于验证签名的合约(链下签名自行实现)：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">/*</span><br><span class="line">签名流程：</span><br><span class="line">1. 将消息签名</span><br><span class="line">2. 将签名后的消息进行hash</span><br><span class="line">3. 将签名并且hash后的消息和私钥进行签名 该行为是链下操作</span><br><span class="line">4. ecrecover(hash(message),signature)==signer 恢复签名。ecrecover通过hash后的消息和链下签名恢复地址，检查地址是否为期望地址</span><br><span class="line">*/</span><br><span class="line">contract VerifySig&#123;</span><br><span class="line">    //传入：</span><br><span class="line">    //签名人地址</span><br><span class="line">    //消息，这里一个字符串</span><br><span class="line">    //链下签名</span><br><span class="line">    function verify(address _signer,string memory _message,bytes memory _sig) external pure returns(bool)&#123;</span><br><span class="line">        //两次hash是为了提高安全性，有第三方认为，一次签名容易被破解</span><br><span class="line">        bytes32 messageHash = getMessageHash(_message);</span><br><span class="line">        bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);</span><br><span class="line">        return recover(ethSignedMessageHash,_sig) == _signer;</span><br><span class="line">    &#125;</span><br><span class="line">    function getMessageHash(string memory _message) public pure returns (bytes32)&#123;</span><br><span class="line">        return keccak256(abi.encodePacked(_message));</span><br><span class="line">    &#125;</span><br><span class="line">    function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32)&#123;</span><br><span class="line">        return keccak256(abi.encodePacked(&quot;\x19Ethereum Singed Message:\n32&quot;,_messageHash));</span><br><span class="line">    &#125;</span><br><span class="line">    function recover(bytes32 _ethSignedMessageHash,bytes memory _sig) public pure returns (address)&#123;</span><br><span class="line">        (bytes32 r,bytes32 s, uint8 v) = _split(_sig);</span><br><span class="line">        return ecrecover(_ethSignedMessageHash,v,r,s);</span><br><span class="line">    &#125;</span><br><span class="line">    //_sig总共65位，其中：</span><br><span class="line">    //r 32位</span><br><span class="line">    //s 32位</span><br><span class="line">    //v 1位</span><br><span class="line">    function _split(bytes memory _sig) internal pure returns(bytes32 r,bytes32 s,uint8 v)&#123;</span><br><span class="line">        require(_sig.length == 65,&quot;invalid signature length&quot;);</span><br><span class="line">        assembly&#123;</span><br><span class="line">        //汇编中，前32位不取</span><br><span class="line">            r := mload(add(_sig,32)) //跳过32位后，取32位</span><br><span class="line">            s := mload(add(_sig,64)) //跳过64位后，取32位</span><br><span class="line">            v := byte(0,mload(add(_sig,96))) //跳过96位后，取剩余的</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4-合约自毁">4. 合约自毁</h2>
+<p><code>selfdestruct(payable(msg.sender));</code>，其中<code>msg.sender</code>是只接收eth的地址，有两个作用：</p>
+<ol>
+<li>删除合约，就是自毁</li>
+<li>自毁同时，强制发送eth到指定地址，也就是为了安全，强制转移走eth</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract Kill&#123;</span><br><span class="line">    constructor() payable&#123;&#125;</span><br><span class="line">    function kill() external&#123;</span><br><span class="line">        //msg.sender表示，合约只要自毁，就会强制把当前合约剩余的eth转移给msg.sender</span><br><span class="line">        selfdestruct(payable(msg.sender));</span><br><span class="line">    &#125;</span><br><span class="line">    //用于测试该合约是否被销毁</span><br><span class="line">    function testCall() external pure returns(uint)&#123;</span><br><span class="line">        return 123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract Helper &#123;</span><br><span class="line">     function getBalance() external view returns (uint)&#123;</span><br><span class="line">         return address(this).balance;</span><br><span class="line">     &#125;</span><br><span class="line">     //会自毁的同时，将Kill合约剩余的eth强制转移给Helper合约</span><br><span class="line">     function kill(Kill _kill) external&#123;</span><br><span class="line">         _kill.kill();</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="5-函数签名-底层逻辑">5. 函数签名-底层逻辑</h2>
+<p>本质意思是，hash的固定前4个字节是用来标记方法名称的，通过该方式来区分不同的方法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line"></span><br><span class="line">contract FunctionSelector&#123;</span><br><span class="line">    //可以获取方法的选择器，即头部hash，固定获取头部4字节</span><br><span class="line">    //传入 &quot;transfer(address,uint256)&quot;</span><br><span class="line">    //可得到结果：0xa9059cbb   与下面Receiver合约中的Log结果一致</span><br><span class="line">    function getSelector(string calldata _func) external pure returns (bytes4)&#123;</span><br><span class="line">        return bytes4(keccak256(bytes(_func)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract Receiver&#123;</span><br><span class="line">    event Log(bytes data);</span><br><span class="line">    function transfer(address _to,uint _amount) external&#123;</span><br><span class="line">        emit Log(msg.data);</span><br><span class="line">        //虚拟机中，事件会打印如下信息：</span><br><span class="line">        //0xa9059cbb0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc4000000000000000000000000000000000000000000000000000000000000000b</span><br><span class="line">        //将该信息拆分为三部分：</span><br><span class="line">        //0xa9059cbb  表示函数选择器，即代表transfer函数，固定占有4个字节</span><br><span class="line">        //0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc  //第一个参数</span><br><span class="line">        //4000000000000000000000000000000000000000000000000000000000000000b  //第二个参数</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="6-通过合约部署合约-create2">6. 通过合约部署合约-create2</h2>
+<p>注意和通过合约调用合约进行区分。该方式是直接通过合约部署新的合约。</p>
+<h3 id="6-1-通过new部署合约">6.1 通过new部署合约</h3>
+<p>可以方便随时部署，<br>
+缺点是：每次new在不同的链上存储位置进行部署</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line"></span><br><span class="line">contract DeployWithCreate2&#123;</span><br><span class="line">    address public owner;</span><br><span class="line">    constructor(address _owner)&#123;</span><br><span class="line">        owner = _owner;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract Create2Factory&#123;</span><br><span class="line">    event Deploy(address addr);</span><br><span class="line">    function deploy() external&#123;</span><br><span class="line">        DeployWithCreate2 _contract = new DeployWithCreate2(msg.sender);</span><br><span class="line">        emit Deploy(address(_contract));  //获取到部署的合约地址</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="6-2-通过create2部署合约">6.2 通过create2部署合约</h3>
+<p>低版本中，需要通过内联，显式调用create2来部署合约。但8.0后简化了逻辑。具体看如下。<br>
+借用了salt进行部署，只要salt不变，则表示链上该位置不能重复部署。除非该位置的合约被销毁了。<br>
+简单说，只要salt不变，则合约地址不变。<br>
+其中会涉及到个<code>bytecode</code>，这是机器码，也就是合约编译后的完整结果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract DeployWithCreate2&#123;</span><br><span class="line">    address public owner;</span><br><span class="line">    constructor(address _owner)&#123;</span><br><span class="line">        owner = _owner;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//工厂合约</span><br><span class="line">contract Create2Factory&#123;</span><br><span class="line">    event Deploy(address addr);</span><br><span class="line">    function deploy(uint _salt) external&#123;</span><br><span class="line">        DeployWithCreate2 _contract = new DeployWithCreate2&#123;</span><br><span class="line">            salt: bytes32(_salt)</span><br><span class="line">        &#125;(msg.sender);</span><br><span class="line">        emit Deploy(address(_contract));  //获取到部署的合约地址</span><br><span class="line">    &#125;</span><br><span class="line">    //用于计算合约地址</span><br><span class="line">    //bytecode是要部署的合约的机器码（该机器码其实）</span><br><span class="line">    function getAddress(bytes memory bytecode,uint _salt) public view returns(address)&#123;</span><br><span class="line">        bytes32 hash = keccak256(</span><br><span class="line">            abi.encodePacked(</span><br><span class="line">                //四个参数：固定的0xff、合约地址、salt、机器码</span><br><span class="line">                bytes1(0xff), address(this), _salt, keccak256(bytecode)</span><br><span class="line">            )</span><br><span class="line">        );</span><br><span class="line">        return address(uint160(uint(hash)));</span><br><span class="line">   &#125;</span><br><span class="line">   //获取机器码，机器码相当于是要部署的合约编译后的完整内容</span><br><span class="line">   //传入合约初始化时需要的参数</span><br><span class="line">   function getBytecode(address _owner) public pure returns(bytes memory)&#123;</span><br><span class="line">       bytes memory bytecode = type(DeployWithCreate2).creationCode;</span><br><span class="line">       return abi.encodePacked(bytecode,abi.encode(_owner));</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="7-多重调用">7. 多重调用</h2>
+<h3 id="7-1-基本的multi-call">7.1 基本的Multi Call</h3>
+<ol>
+<li>是指把对一个或者多个合约的多次调用打包整合在一个交易中，然后再去调用合约，优点：<br>
+比如前端短时间需要对合约几十次调用，而一个链的rpc节点又限制了调用次数，比如20秒限制只能调用一次。此时，如果能把多次调用整合成一次调用，可以提高效率。</li>
+<li>因为链上的延迟，多次调用，获取到的链上的结果可能有所不同，比如获取块高度。打包后调用，将会获取到同一个块的结果。</li>
+</ol>
+<p>使用该方式的不足之处是，被调用<code>合约TestMultiCall</code>的<code>msg.sender</code>表示的是<code>合约MultiCall</code>的地址，并不是调用<code>合约MultiCall</code>的真实用户的地址。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract TestMultiCall&#123;</span><br><span class="line">    function func1() external view returns (uint,uint)&#123;</span><br><span class="line">        return (1,block.timestamp);</span><br><span class="line">    &#125;</span><br><span class="line">    function func2() external view returns (uint,uint)&#123;</span><br><span class="line">        return (2,block.timestamp);</span><br><span class="line">    &#125;</span><br><span class="line">    function getData1() external pure returns (bytes memory)&#123;</span><br><span class="line">        //获取选择器</span><br><span class="line">        //等价于：abi.encodeWithSignature(&quot;func1()&quot;)</span><br><span class="line">        return abi.encodeWithSelector(this.func1.selector);</span><br><span class="line">    &#125;</span><br><span class="line">    function getData2() external pure returns (bytes memory)&#123;</span><br><span class="line">        return abi.encodeWithSelector(this.func2.selector);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract MultiCall&#123;</span><br><span class="line">    //data 表示编码后的要调用的方法和内容，该数据可以通过链下计算获取，或者合约中实现该计算</span><br><span class="line">    //比如上面TestMultiCall的func1()方法，转换成data后，即可通过multiCall来调用</span><br><span class="line">    function multiCall(address[] calldata targets,bytes[] calldata data) external view returns(bytes[] memory)&#123;</span><br><span class="line">        require(targets.length == data.length,&quot;target length != data length&quot;);</span><br><span class="line">        bytes[] memory results = new bytes[](data.length);</span><br><span class="line">        for (uint i;i&lt;targets.length;i++)&#123;</span><br><span class="line">            //需要用staticcall，而不是call。是因为call可能会产生动态写入，与multiCall的view属性不一致</span><br><span class="line">            //result结果是abi编码返回的</span><br><span class="line">            (bool success,bytes memory result) = targets[i].staticcall(data[i]);</span><br><span class="line">            require(success,&quot;call failed&quot;);</span><br><span class="line">            results[i] = result; //记录返回结果</span><br><span class="line">        &#125;</span><br><span class="line">        return results;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="7-2-多重委托调用multi-delegate-call">7.2 多重委托调用Multi Delegate Call</h3>
+<p>为了解决上面的<code>Multi Call</code>的不足之处：被调用合约的<code>msg.sender</code>表示的是上一个合约的地址，并不是进行调用的用户的地址。<br>
+通过委托调用，msg.sender在不同合约中会始终表示的是调用人的真是地址。<br>
+缺点是：</p>
+<ol>
+<li>委托合约和业务合约，都需要是在同一个项目中。继承关系，可以看下方代码</li>
+<li>警告：<code>不建议在多重委托调用中接收处理代币逻辑</code>。比如，只传入一笔token，但重复调用3次转账，会凭空出来两笔token。如果非要在多重委托调用中进行代币业务处理，那业务逻辑一定要规划好。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract MultiDelegatecall&#123;</span><br><span class="line">    error DelegatecallFailed();</span><br><span class="line">    function multiDelegatecall(bytes[] calldata data) external payable returns(bytes[] memory results)&#123;</span><br><span class="line">        results = new bytes[](data.length);</span><br><span class="line">        for (uint i;i&lt;data.length;i++)&#123;</span><br><span class="line">            (bool ok,bytes memory res) = address(this).delegatecall(data[i]);</span><br><span class="line">            if (!ok)&#123;</span><br><span class="line">                revert DelegatecallFailed();</span><br><span class="line">            &#125;</span><br><span class="line">            results[i] = res;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract TestMultiDelegatecall is MultiDelegatecall&#123;</span><br><span class="line">    event Log(address caller, string func, uint i);</span><br><span class="line">    function func1(uint x, uint y) external&#123;</span><br><span class="line">        emit Log(msg.sender,&quot;func1&quot;, x+y);</span><br><span class="line">    &#125;</span><br><span class="line">    function func2() external returns (uint)&#123;</span><br><span class="line">        emit Log(msg.sender,&quot;func2&quot;,2);</span><br><span class="line">        return 111; </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract Helper &#123;</span><br><span class="line">    function getFunc1Data(uint x, uint y) external pure returns (bytes memory)&#123;</span><br><span class="line">        return abi.encodeWithSelector(TestMultiDelegatecall.func1.selector,x,y);</span><br><span class="line">    &#125;</span><br><span class="line">    function getFunc2Data() external pure returns (bytes memory)&#123;</span><br><span class="line">        return abi.encodeWithSelector(TestMultiDelegatecall.func2.selector);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="8-abi编码和解码">8. ABI编码和解码</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line">contract AbiDecode&#123;</span><br><span class="line">    struct MyStruct&#123;</span><br><span class="line">        string name;</span><br><span class="line">        uint[2] nums;</span><br><span class="line">    &#125;</span><br><span class="line">    function encode(</span><br><span class="line">        uint x, </span><br><span class="line">        address addr,</span><br><span class="line">        uint[] calldata arr,</span><br><span class="line">        MyStruct calldata myStruct</span><br><span class="line">    ) external pure returns(bytes memory) &#123;</span><br><span class="line">        return abi.encode(x,addr,arr,myStruct);</span><br><span class="line">    &#125;</span><br><span class="line">    function decode(bytes calldata data) external pure returns(</span><br><span class="line">        uint x, </span><br><span class="line">        address addr,</span><br><span class="line">        uint[] memory arr,</span><br><span class="line">        MyStruct memory myStruct</span><br><span class="line">    ) &#123;</span><br><span class="line">        (x,addr,arr,myStruct) = abi.decode(data,(uint,address,uint[],MyStruct));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="9-gas优化">9. gas优化</h2>
+<p>当然，如果能通过evm内联汇编来优化是更好，但可读性低。折中后，在现有代码逻辑中优化会更稳妥一些。<br>
+通过案例来观察优化细节：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: GPL-3.0</span><br><span class="line">pragma solidity ^0.8.3;</span><br><span class="line"></span><br><span class="line">contract GasGolf&#123;</span><br><span class="line">    /*</span><br><span class="line">    初始gas：50992</span><br><span class="line">    第一次优化：将memory 改为calldata  gas消耗：49163</span><br><span class="line">    第二次优化，引入_total内存变量，降低原先循环更新total频率，即降低写入storage频率  gas消耗：48952</span><br><span class="line">    第三次优化，短路。将两个判断直接写入if语句中，第一个判断失败就不会执行第二个判断。   gas消耗：48634</span><br><span class="line">    第四次优化，将i+=1改为++i  gas消耗：48244</span><br><span class="line">    第五次优化，缓存数组长度    gas消耗：48209</span><br><span class="line">    第六次优化，将数组元素提前拷贝到内存中 gas消耗：48047</span><br><span class="line">    */</span><br><span class="line">    uint public total;</span><br><span class="line">    </span><br><span class="line">    //输入参数：[1,2,3,4,5,100]</span><br><span class="line">    function sumIfEvenAndLessThan99(uint[] calldata nums) external&#123;</span><br><span class="line">        uint _total = total;</span><br><span class="line">        uint len = nums.length;</span><br><span class="line">        for (uint i=0;i&lt;len;++i)&#123;</span><br><span class="line">            uint num = nums[i];</span><br><span class="line">            if (num%2 ==0 &amp;&amp; num&lt;99)&#123;</span><br><span class="line">                _total += num;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        total = _total;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="12-综合案例-时间锁合约">12. 综合案例-时间锁合约</h2>
+<p>队列中交易，只有到了指定时间，才能手动触发</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract TimeLock&#123;</span><br><span class="line">    error NotOwnerError();</span><br><span class="line">    error AlreadyQueuedError(bytes32 txId);</span><br><span class="line">    error TimestampNotInRangeError(uint blockTimestamp,uint timestamp);</span><br><span class="line">    error NotQueuedError(bytes32 txId);</span><br><span class="line">    error TimestampNotPassedError(uint blockTimestamp,uint timestamp);</span><br><span class="line">    error TimestampExpiredError(uint blockTimestamp,uint expireAt);</span><br><span class="line">    error TxFailedError();</span><br><span class="line"></span><br><span class="line">    event Queue(bytes32 indexed txId, address indexed target,uint value,string func,bytes data,uint _timestamp);</span><br><span class="line">    event Execute(bytes32 indexed txId, address indexed target,uint value,string func,bytes data,uint _timestamp);</span><br><span class="line">    event Cancel(bytes32 indexed txId);</span><br><span class="line">    uint public constant MIN_DELAY = 10; //秒</span><br><span class="line">    uint public constant MAX_DELAY = 1000;</span><br><span class="line">    uint public constant GRACE_PERIOD = 1000;</span><br><span class="line">    address public owner;</span><br><span class="line">    mapping(bytes32=&gt;bool) public queued;</span><br><span class="line"></span><br><span class="line">    constructor()&#123;</span><br><span class="line">        owner = msg.sender;</span><br><span class="line">    &#125;</span><br><span class="line">    receive() external payable&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    modifier onlyOwner()&#123;</span><br><span class="line">        if (msg.sender != owner)&#123;</span><br><span class="line">            revert NotOwnerError();</span><br><span class="line">        &#125;</span><br><span class="line">        _;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function getTxId(address _target,uint _value,string calldata _func,bytes calldata _data,uint _timestamp) public pure returns (bytes32 txId)&#123;</span><br><span class="line">        return keccak256(abi.encode(_target,_value,_func,_data,_timestamp));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    //_target：目标合约地址</span><br><span class="line">    //_value：数值,</span><br><span class="line">    //_func：要执行的方法名称</span><br><span class="line">    //_data：要操作的具体数据</span><br><span class="line">    //_timestamp：时间戳</span><br><span class="line">    function queue(address _target,uint _value,string calldata _func,bytes calldata _data,uint _timestamp) external onlyOwner&#123;</span><br><span class="line">        //当前交易id</span><br><span class="line">        bytes32 txId = getTxId(_target,_value,_func,_data,_timestamp);</span><br><span class="line">        //检查id是否存在</span><br><span class="line">        if (queued[txId])&#123;</span><br><span class="line">            revert AlreadyQueuedError(txId);</span><br><span class="line">        &#125;</span><br><span class="line">        //检查交易时间戳，即交易要执行的时间，单位秒</span><br><span class="line">        if(_timestamp&lt;block.timestamp+MIN_DELAY || _timestamp&gt;block.timestamp+MAX_DELAY)&#123;</span><br><span class="line">            revert TimestampNotInRangeError(block.timestamp,_timestamp);</span><br><span class="line">        &#125;</span><br><span class="line">        queued[txId] = true;</span><br><span class="line">        emit Queue(txId,_target,_value,_func,_data,_timestamp);</span><br><span class="line">    &#125;</span><br><span class="line">    function execute(address _target,uint _value,string calldata _func,bytes calldata _data,uint _timestamp) external payable onlyOwner returns(bytes memory)&#123;</span><br><span class="line">        //当前交易id</span><br><span class="line">        bytes32 txId = getTxId(_target,_value,_func,_data,_timestamp);</span><br><span class="line">        //检查txid是否有效</span><br><span class="line">        if (queued[txId])&#123;</span><br><span class="line">            revert NotQueuedError(txId);</span><br><span class="line">        &#125;</span><br><span class="line">        //检查时间戳 block.timestamp &gt;_timestamp</span><br><span class="line">        if(block.timestamp&lt;_timestamp)&#123;</span><br><span class="line">            revert TimestampNotPassedError(block.timestamp,_timestamp);</span><br><span class="line">        &#125;</span><br><span class="line">        if(block.timestamp&gt;_timestamp+GRACE_PERIOD)&#123;  //超时1000秒依旧可以执行</span><br><span class="line">            revert TimestampExpiredError(block.timestamp,_timestamp+GRACE_PERIOD);</span><br><span class="line">        &#125;</span><br><span class="line">        //队列中删除交易</span><br><span class="line">        queued[txId] = false;</span><br><span class="line">        //执行</span><br><span class="line">        bytes memory data;</span><br><span class="line">        if (bytes(_func).length&gt;0)&#123;</span><br><span class="line">            data = abi.encodePacked(bytes4(keccak256(bytes(_func))),_data);</span><br><span class="line">        &#125;else&#123;</span><br><span class="line">            data = _data;</span><br><span class="line">        &#125;</span><br><span class="line">        (bool ok,bytes memory res) = _target.call&#123;value:_value&#125;(data);</span><br><span class="line">        if(!ok)&#123;</span><br><span class="line">            revert TxFailedError();</span><br><span class="line">        &#125;</span><br><span class="line">        emit Execute(txId,_target,_value,_func,_data,_timestamp);</span><br><span class="line">        return res;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function cancel(bytes32 _txId) external onlyOwner&#123;</span><br><span class="line">        if (!queued[_txId])&#123;</span><br><span class="line">            revert NotQueuedError(_txId);</span><br><span class="line">        &#125;</span><br><span class="line">        queued[_txId] = false;</span><br><span class="line">        emit Cancel(_txId);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract TestTimeLock&#123;</span><br><span class="line">    address public timeLock;</span><br><span class="line">    constructor(address _timeLock)&#123;</span><br><span class="line">        timeLock = _timeLock;</span><br><span class="line">    &#125;</span><br><span class="line">    function test() external&#123;</span><br><span class="line">        require(msg.sender == timeLock);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function getTimestamp() external view returns(uint)&#123;</span><br><span class="line">        return block.timestamp +100;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="13-合约安全">13. 合约安全</h2>
+<ol>
+<li>防重入攻击，比如攻击者利用fallback()反复攻击获取资产。解决方案：
+<ol>
+<li>先变更状态，再执行操作。比如，先改变余额，再执行转账</li>
+<li>利用重入锁：</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">bool internal locked;</span><br><span class="line">modifier noReentrant()&#123;</span><br><span class="line">    require(!locked,&quot;No re-entrancy&quot;);</span><br><span class="line">    locked = true;</span><br><span class="line">    _;</span><br><span class="line">    locked = false</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>数学溢出攻击<br>
+为防止上溢或下溢，需要使用安全数学库进行操作，<code>openZepplin</code>有提供</li>
+</ol>
+<h2 id="12-总结">12. 总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/3f51919a/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/solidity/" rel="tag">solidity</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/24d64513/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            sui基础(1)-开发网连接和部署
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/cf5190ad/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">solidity v8.0新增特性</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

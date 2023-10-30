@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>substrate基础(6)-新增节点并授权特定节点行为 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/substrate/基础/substrate基础(6)-新增节点并授权特定节点行为"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  substrate基础(6)-新增节点并授权特定节点行为
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/90299bc0/" class="article-date">
+  <time datetime="2022-07-05T01:14:53.000Z" itemprop="datePublished">2022-07-05</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/">Substrate</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/%E5%9F%BA%E7%A1%80/">基础</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">8 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>本文依旧基于<a target="_blank" rel="noopener" href="https://github.com/substrate-developer-hub/substrate-node-template">substrate-node-template</a> 进行操作.<br>
+该项目主要是为了方便开发人员调试和测试，以及初次接触substrate的入门者首选，掌握该项目后，再去接触正式项目，会容易很多<br>
+本文假定你已经编译好了这个项目，具体编译可以参考本系列第一篇文章：<a href="https://www.bitxx.top/articles/113dc518/">substrate基础(1)-substrate-node-template编译及部署</a></p>
+<p>本文主要介绍如何授权特定节点行为：比如授予某些节点验证块的权限，而向其他节点授予传播事务的权限。联盟链等有限网络。<br>
+初步掌握pallet添加到runtime中的流程</p>
+<span id="more"></span>
+<h2 id="1-项目导入授权模块">1. 项目导入授权模块</h2>
+<p><a target="_blank" rel="noopener" href="https://github.com/substrate-developer-hub/substrate-node-template">substrate-node-template</a><br>
+项目中默认没有添加节点授权模块，因此需要先从substrate引入<code>pallet-node-authorization</code>模块。 从项目根目录开始，具体步骤如下：</p>
+<ol>
+<li>前往<code>runtime/Cargo.toml</code>进行编辑：</li>
+</ol>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 加入pallet-node-authorization，其中version、branch、default-features要以当前[dependencies]别的依赖的版本号为准（不要直接复制官方文档或者下方的）</span></span><br><span class="line"><span class="section">[dependencies]</span></span><br><span class="line"><span class="attr">pallet-node-authorization</span> = &#123; version = <span class="string">&quot;4.0.0-dev&quot;</span>, default-features = <span class="literal">false</span>, git = <span class="string">&quot;https://github.com/paritytech/substrate.git&quot;</span>, branch = <span class="string">&quot;polkadot-v0.9.24&quot;</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># std中加入一行pallet-node-authorization/std即可</span></span><br><span class="line"><span class="section">[features]</span></span><br><span class="line"><span class="attr">std</span> = [</span><br><span class="line">    <span class="string">&quot;pallet-node-authorization/std&quot;</span>,</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>再次说明<code>[dependencies]</code>中，<code>pallet-node-authorization</code>的<code>version、branch、default-features</code><br>
+属性值，根据同标签下方别的已有的依赖来设置对应的属性，不要复制我提供的，也不要直接复制官方文档的。否则你大概率编译失败。</p>
+<ol start="2">
+<li>上述操作完成后，依旧是在<code>runtime</code>目录，执行下面命令，检测新添加的<code>node-template-runtime</code>依赖是否正常：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo check -p node-template-runtime</span><br></pre></td></tr></table></figure>
+<h2 id="2-添加授权规则">2. 添加授权规则</h2>
+<p>本文用来初步了解如何在<code>runtime</code>中添加<code>pattle</code><br>
+为了模拟权限管理，我们可以使用<code>sudo pallet</code>来调用权限相关的方法，<code>sudo pallet</code><br>
+默认已经是在<a target="_blank" rel="noopener" href="https://github.com/substrate-developer-hub/substrate-node-template">substrate-node-template</a> 中，允许你通过<code>root-level</code><br>
+来管理账户。在真是项目中，我们一般使用<code>governance-based</code>来更加全面的管理账户。 这里，我们编辑文件：<code>runtime/src/lib.rs</code>，添加一行即可：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> frame_system::EnsureRoot;</span><br></pre></td></tr></table></figure>
+<h3 id="2-1-实现pallet的config-trait">2.1 实现pallet的Config trait</h3>
+<p>编辑：<code>runtime/src/lib.rs</code></p>
+<ol>
+<li>在宏<code>parameter_types!</code>模块下新增两行：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">const</span> MaxWellKnownNodes: <span class="type">u32</span> = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">const</span> MaxPeerIdLength: <span class="type">u32</span> = <span class="number">128</span>;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>新增如下整块代码：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_node_authorization</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">MaxWellKnownNodes</span> = MaxWellKnownNodes;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">MaxPeerIdLength</span> = MaxPeerIdLength;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">AddOrigin</span> = EnsureRoot&lt;AccountId&gt;;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">RemoveOrigin</span> = EnsureRoot&lt;AccountId&gt;;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">SwapOrigin</span> = EnsureRoot&lt;AccountId&gt;;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">ResetOrigin</span> = EnsureRoot&lt;AccountId&gt;;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">WeightInfo</span> = ();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>在宏<code>construct_runtime!</code><br>
+的<code>pub enum Runtime where Block = Block, NodeBlock = opaque::Block, UncheckedExtrinsic = UncheckedExtrinsic &#123; xxx &#125;</code><br>
+中，新增一行：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NodeAuthorization: pallet_node_authorization::&#123;Pallet, Call, Storage, Event&lt;T&gt;, Config&lt;T&gt;&#125;,</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>在<code>runtime</code>目录下，检测是否可编译：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo check -p node-template-runtime</span><br></pre></td></tr></table></figure>
+<p>正常是完全可编译通过的</p>
+<h3 id="2-2-为授权节点添加genesis存储">2.2 为授权节点添加genesis存储</h3>
+<p>标题为官方文档提供的，但我认为，这一章节的目的是，通过的代码默认将启动的<code>Alice</code>和<code>Bob</code>两个节点能够自动组成一个网络。<br>
+说白了就是在代码层面直接预置两个可信节点。</p>
+<p>因为substrate默认节点使用的是<code>bs58</code>编码账户，授权节点要想兼容，则需要加入依赖库</p>
+<ol>
+<li>在<code>node/Cargo.toml</code>的<code>[dependencies]</code>中加入：</li>
+</ol>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">bs58</span> = <span class="string">&quot;0.4.0&quot;</span></span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>编辑<code>node/src/chain_spec.rs</code>，添加如下两行：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> sp_core::OpaquePeerId;</span><br><span class="line"><span class="comment">// A struct wraps Vec&lt;u8&gt;, represents as our `PeerId`.</span></span><br><span class="line"><span class="keyword">use</span> node_template_runtime::NodeAuthorizationConfig; <span class="comment">// The genesis config that serves for our pallet.</span></span><br></pre></td></tr></table></figure>
+<p>在<code>fn testnet_genesis( *** )</code>最内层的<code>GenesisConfig</code>代码块中添加：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">node_authorization: NodeAuthorizationConfig &#123;</span><br><span class="line">nodes: <span class="built_in">vec!</span>[</span><br><span class="line">    (</span><br><span class="line">        <span class="title function_ invoke__">OpaquePeerId</span>(bs58::<span class="title function_ invoke__">decode</span>(<span class="string">&quot;12D3KooWBmAwcd4PJNJvfV89HwE48nwkRmAgo8Vy3uQEyNNHBox2&quot;</span>).<span class="title function_ invoke__">into_vec</span>().<span class="title function_ invoke__">unwrap</span>()),</span><br><span class="line">        endowed_accounts[<span class="number">0</span>].<span class="title function_ invoke__">clone</span>()</span><br><span class="line">    ),</span><br><span class="line">    (</span><br><span class="line">        <span class="title function_ invoke__">OpaquePeerId</span>(bs58::<span class="title function_ invoke__">decode</span>(<span class="string">&quot;12D3KooWQYV9dGMFoRzNStwpXztXaBUjtPqi6aU76ZgUriHhKust&quot;</span>).<span class="title function_ invoke__">into_vec</span>().<span class="title function_ invoke__">unwrap</span>()),</span><br><span class="line">        endowed_accounts[<span class="number">1</span>].<span class="title function_ invoke__">clone</span>()</span><br><span class="line">    ),</span><br><span class="line">],</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure>
+<p>上方元组中，有两个属性，一个表示节点的PeerId转换为二进制；另一个表示这个节点属于谁：endowed_accounts[0]为<code>Alice</code>，endowed_accounts[1]为<code>Bob</code><br>
+该目的是，<code>Alice</code>和<code>Bob</code>配置为了内置的可信网络，这两个节点启动后，立马可以组成一个网络</p>
+<ol start="3">
+<li><code>node</code>目录下，执行如下命令，检测是否能编译：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo check -p  bs58</span><br></pre></td></tr></table></figure>
+<h3 id="2-3-编译节点">2.3 编译节点</h3>
+<p>回到项目<code>substrate-node-template</code>根目录，执行命令开始编译</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo build --release</span><br></pre></td></tr></table></figure>
+<h2 id="3-网络启动">3 网络启动</h2>
+<p>节点的启动，为方便开发和测试，会用到多个substrate内部提供的账户信息，均为固定值，具体如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><strong>账户</strong></th>
+<th style="text-align:left"><strong>键值</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Alice</td>
+<td style="text-align:left">Node key: c12b6d18942f5ee8528c8e2baf4e147b5c5c18710926ea492d09cbd9f6c9f82a</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">PeerID (generated from the node key): 12D3KooWBmAwcd4PJNJvfV89HwE48nwkRmAgo8Vy3uQEyNNHBox2</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">Decoded PeerID in hex: 0024080112201ce5f00ef6e89374afb625f1ae4c1546d31234e87e3c3f51a62b91dd6bfa57df</td>
+</tr>
+<tr>
+<td style="text-align:center">Bob</td>
+<td style="text-align:left">Node key: 6ce3be907dbcabf20a9a5a60a712b4256a54196000a8ed4050d352bc113f8c58</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">PeerID (generated from the node key): 12D3KooWQYV9dGMFoRzNStwpXztXaBUjtPqi6aU76ZgUriHhKust</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">Decoded PeerID in hex: 002408011220dacde7714d8551f674b8bb4b54239383c76a2b286fa436e93b2b7eb226bf4de7</td>
+</tr>
+<tr>
+<td style="text-align:center">Charlie</td>
+<td style="text-align:left">Node key: 3a9d5b35b9fb4c42aafadeca046f6bf56107bd2579687f069b42646684b94d9e</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">PeerID (generated from the node key): 12D3KooWJvyP3VJYymTqG7eH4PM5rN4T2agk5cdNCfNymAqwqcvZ</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">Decoded PeerID in hex: 002408011220876a7b4984f98006dc8d666e28b60de307309835d775e7755cc770328cdacf2e</td>
+</tr>
+<tr>
+<td style="text-align:center">Dave</td>
+<td style="text-align:left">Node key: a99331ff4f0e0a0434a6263da0a5823ea3afcfffe590c9f3014e6cf620f2b19a</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">PeerID (generated from the node key): 12D3KooWPHWFrfaJzxPnqnAYAoRUyAHHKqACmEycGTVmeVhQYuZN</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left">Decoded PeerID in hex: 002408011220c81bc1d7057a1511eb9496f056f6f53cdfe0e14c8bd5ffca47c70a8d76c1326d</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-1-节点启动">3.1 节点启动</h3>
+<p>前面的可信配置和编译，<code>Alice</code>和<code>Bob</code>两个账户的节点启动后，即可组成一个双节点的测试网络，后续新的测试都是在这两个之上完成的。</p>
+<ol>
+<li>启动第一个节点，<code>alice</code>节点： 预先内置的可信节点<br>
+<code>注：</code>如果节点不是在同一个本地网络，启动应该加上：–no-mdns</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">./target/release/node-template \</span><br><span class="line">--chain=local \</span><br><span class="line">--base-path ./tmp/validator1 \</span><br><span class="line">--alice \</span><br><span class="line">--node-key=c12b6d18942f5ee8528c8e2baf4e147b5c5c18710926ea492d09cbd9f6c9f82a \</span><br><span class="line">--port 30333 \</span><br><span class="line">--ws-port 9944</span><br></pre></td></tr></table></figure>
+<p>在创世默认local配置中，<code>sudo</code>账户默认是<code>Alice</code></p>
+<ol start="2">
+<li>启动第二个节点，<code>bob</code>节点： 预先内置的可信节点<br>
+<code>注：</code>如果节点不是在同一个本地网络，启动应该加上：–no-mdns</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">./target/release/node-template \</span><br><span class="line">--chain=local \</span><br><span class="line">--base-path ./tmp/validator2 \</span><br><span class="line">--bob \</span><br><span class="line">--node-key=6ce3be907dbcabf20a9a5a60a712b4256a54196000a8ed4050d352bc113f8c58 \</span><br><span class="line">--port 30334 \</span><br><span class="line">--ws-port 9945</span><br></pre></td></tr></table></figure>
+<p>在创世默认local配置中，<code>sudo</code>账户默认是<code>Alice</code><br>
+前两个节点基于内置配置，启动后网络可以互通，正常运行</p>
+<ol start="3">
+<li>启动第三个节点，<code>charlie</code>节点：<br>
+<code>最终目的</code>：授权为<code>alice</code>和<code>bob</code>组成的网络可识别的节点。 该节点为外部配置的<code>charlie</code>节点，默认无法被<code>alice</code>和<code>bob</code>组成的网络识别。启动时需要使用<code>--offchain-worker</code>标记<br>
+<code>注：</code>如果节点不是在同一个本地网络，启动应该加上：–no-mdns</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">./target/release/node-template \</span><br><span class="line">--chain=local \</span><br><span class="line">--base-path ./tmp/validator3 \</span><br><span class="line">--name charlie  \</span><br><span class="line">--node-key=3a9d5b35b9fb4c42aafadeca046f6bf56107bd2579687f069b42646684b94d9e \</span><br><span class="line">--port 30335 \</span><br><span class="line">--ws-port=9946 \</span><br><span class="line">--offchain-worker always</span><br></pre></td></tr></table></figure>
+<p>启动后，会发现该节点没有同步块，这是因为没有预置账户，没有被前两个节点组成的网络识别到。需要手动添加。 打开<a target="_blank" rel="noopener" href="https://polkadot.js.org/apps">polkadot web apps</a> (具体使用请参考前面文章)<br>
+，连接到节点一和节点二组成的网络，这里我们连接到节点一。 进入：<code>开发者</code>-<code>超级管理</code>目录</p>
+<p>在创世默认local配置中，<code>sudo</code>账户默认是<code>Alice</code>，选择：<code>nodeAuthorization</code>-<code>addWellKnownNode(node,owner)</code>，在下方node中输入(节点编号)<br>
+：<code>0x002408011220876a7b4984f98006dc8d666e28b60de307309835d775e7755cc770328cdacf2e</code>(一定要带上0x)，owner中选择：<code>CHARLIE</code>，表示该节点属于它。<br>
+然后点击<code>提交Sudo</code>。之后，第三个节点就能正常同步块了。<br>
+(个人猜测：<code>CHARLIE</code>节点此时也参与块的验证，addWellKnownNode中已经包含validated属性)</p>
+<img src="/articles/90299bc0/1.png" class="" title="添加外部可信节点">
+<ol start="4">
+<li>启动第四个节点，<code>dave</code>节点：<br>
+<code>最终目的</code>：配置为<code>charlie</code>的子节点，该节点是有限访问的 该节点为外部配置的<code>dave</code>节点，默认无法被<code>alice</code>和<code>bob</code>组成的网络识别。启动时需要使用<code>--offchain-worker</code>标记<br>
+<code>注：</code>如果节点不是在同一个本地网络，启动应该加上：–no-mdns</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">./target/release/node-template \</span><br><span class="line">--chain=local \</span><br><span class="line">--base-path ./tmp/validator4 \</span><br><span class="line">--name dave \</span><br><span class="line">--node-key=a99331ff4f0e0a0434a6263da0a5823ea3afcfffe590c9f3014e6cf620f2b19a \</span><br><span class="line">--port 30336 \</span><br><span class="line">--ws-port 9947 \</span><br><span class="line">--offchain-worker always</span><br></pre></td></tr></table></figure>
+<p>启动后，会发现该节点没有同步块，这是因为没有预置账户，没有被前两个节点组成的网络识别到。 打开<a target="_blank" rel="noopener" href="https://polkadot.js.org/apps">polkadot web apps</a> (具体使用请参考前面文章)<br>
+，连接到节点一和节点二组成的网络，这里我们连接到节点一。 选择<code>开发者</code>-<code>交易</code>，具体填写内容看下图： 先申明<code>dave</code>为一个节点 <img src="/articles/90299bc0/3.png" class="" title="申明dave为节点"> 接着授权dave连接到charlie</p>
+<img src="/articles/90299bc0/2.png" class="" title="授权dave连接到charlie"> 此时dave开始同步块数据了。 同样的操作，授权charlie连接到dave 目前可以看出，`dave`只属于`charlie`
+<h2 id="总结">总结</h2>
+<p>按照本文流程，每个结果都可以复现的，亲自实现的。</p>
+<p>流程一句话：添加授权模块，动态添加节点</p>
+<p>本文编辑完毕</p>
+<h2 id="参考">参考</h2>
+<p>[1] <a target="_blank" rel="noopener" href="https://docs.substrate.io/quick-start/">Substrate官方文档</a></p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/90299bc0/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Substrate/" rel="tag">Substrate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/d0691bdb/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            substrate基础(7)-将pallet添加到runtime
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/d13fa01d/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">substrate基础(5)-创建密钥并自定义两个初始节点的网络</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

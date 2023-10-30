@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>substrate进阶(4)-pallet结构之调度函数、钩子函数、Config |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/substrate/pallet进阶/pallet进阶(4)-pallet结构之调度函数"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  substrate进阶(4)-pallet结构之调度函数、钩子函数、Config
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/6fdf0de9/" class="article-date">
+  <time datetime="2022-09-06T01:42:38.000Z" itemprop="datePublished">2022-09-06</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/">Substrate</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/pallet%E8%BF%9B%E9%98%B6/">pallet进阶</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">1.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">5 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>本文主要介绍pallet的调度函数的实现</p>
+<span id="more"></span>
+<h2 id="1-调度函数">1. 调度函数</h2>
+<p>调度函数即<code>Extrinsics（外部调用）</code>，在substrate中共有三种Extrinsics，分别是Inherents、Signed transactions和Unsigned transactions。一般主要用到后两种：</p>
+<ol>
+<li>Signed transactions：签名交易包含发起该交易的账户的签名，并会支付交易费用。因为签名交易的合法性可以在执行之前识别，所以它们可以在节点之间的网络上传播，属于垃圾信息的风险比较小。通俗说，就是需要支付gas的行为</li>
+<li>Unsigned transactions：不需要支付gas的行为，如查阅链上账户余额等行为，一般是只读行为。</li>
+<li>实现： 所有调度函数都放置在<code>#[pallet::call]</code>标注的代码段内，每个调度函数上面需要标注其调用的权重，并根据需要是否添加<code>#[transactional]</code>，如下格式：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::call]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="meta">#[pallet::weight(10_000)]</span>  <span class="comment">//具体的函数使用对应的权重计算函数</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">function1</span>(origin: OriginFor&lt;T&gt;, param: <span class="type">u32</span>, ...) <span class="punctuation">-&gt;</span> DispatchResult &#123;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">#[transactional]</span></span><br><span class="line">    <span class="meta">#[pallet::weight(10_000)]</span>  <span class="comment">//具体的函数换成对应的权重计算函数</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">function2</span>(origin: OriginFor&lt;T&gt;, param: <span class="type">u32</span>, ...) <span class="punctuation">-&gt;</span> DispatchResult &#123;&#125;</span><br><span class="line">    <span class="comment">//其它调度函数</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>一个函数的实现，主要是分三部分：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::weight(10_000)]</span> </span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">set_number_bigger_than_100</span>(origin: OriginFor&lt;T&gt;, number: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> DispatchResult &#123;</span><br><span class="line">    <span class="comment">//这第一步根据实际情况选择：</span></span><br><span class="line">    <span class="comment">// 如果是签名调用的则判断的写法是 ensure_signed(origin)?。 </span></span><br><span class="line">    <span class="comment">// 如果是需要root用户调用的则判断的写法是ensure_root(origin)?。</span></span><br><span class="line">    <span class="comment">// 如果非签名的函数调用的判断写法则是ensure_none(origin)?。</span></span><br><span class="line">    <span class="title function_ invoke__">ensure_signed</span>(origin)?;  <span class="comment">//1、判断是否是合法调用</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 2、函数的具体逻辑</span></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">//3、成功后需要发出事件</span></span><br><span class="line">    <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::xx事件);</span><br><span class="line">    </span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(()) <span class="comment">//固定写法</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li>
+<p>关于权重<br>
+每个调度函数上面都需要标注其权重，在具体开发时，我们一般是先写一个固定的权重，然后在所以功能开发完成后，再写对应的benchmarking(后续文章讲解)</p>
+</li>
+<li>
+<p>关于<code>#[transactional]</code><br>
+按我个人的理解，就是关系型数据库中的<code>事务</code>概念，保证调度函数执行的一致性。更具体点说就是当在函数中遇到错误后，会回滚状态，保证错误发生之前写入的状态回滚。<br>
+该宏需要引入：use frame_support::transactional;</p>
+</li>
+</ol>
+<h2 id="2-钩子函数">2. 钩子函数</h2>
+<ol>
+<li>交易到打包的过程
+<ol>
+<li>用户通过钱包发起交易;</li>
+<li>和钱包相连的全节点收到交易后会把交易广播到网络中;</li>
+<li>然后根据共识算法打包区块，某个全节点获得了打包权（图中画的是节点4）， 然后将交易打包到区块中;</li>
+<li>打包好区块后，将区块广播到网络中;</li>
+<li>其它每个节点收到区块后验证，然后执行区块里面的交易，更新自己本地的账本。</li>
+</ol>
+</li>
+<li>在substrate中区块执行主要分为三步，分别是：
+<ol>
+<li>初始化区块（Initializes the block）;
+<ul>
+<li>初始化区块时就会执行所有pallet（就是construct_runtime!中包含的pallet，并且也是按照construct_runtime!中定义的顺序）的on_initialize函数，不过会最先执行System模块的（frame-system）.</li>
+</ul>
+</li>
+<li>执行区块（Executes extrinsics）;
+<ul>
+<li>区块初始化后，就会根据交易（extrinsics）列表的顺序执行。</li>
+</ul>
+</li>
+<li>确认区块（Finalizes the block）.
+<ul>
+<li>区块中的交易执行完后，确认区块。确认区块时会调用所有pallet（就是construct_runtime!中包含的pallet，并且也是按照construct_runtime!中定义的顺序）的on_idle和on_finalize函数，不过这次最后执行System模块（frame-system）的hooks函数.</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>hooks模板：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Hooks</span>&lt;BlockNumber&gt; &#123;</span><br><span class="line">    <span class="comment">//在区块finalize的时候调用。</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">on_finalize</span>(_n: BlockNumber) &#123;&#125;</span><br><span class="line">    <span class="comment">//区块finalize的时候调用，不过比on_finalize先调用。</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">on_idle</span>(_n: BlockNumber, _remaining_weight: Weight) <span class="punctuation">-&gt;</span> Weight &#123;&#125;</span><br><span class="line">    <span class="comment">//区块初始化的时候调用。</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">on_initialize</span>(_n: BlockNumber) <span class="punctuation">-&gt;</span> Weight &#123;&#125;</span><br><span class="line">    <span class="comment">//执行模块升级的时候调用。</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">on_runtime_upgrade</span>() <span class="punctuation">-&gt;</span> Weight &#123;&#125;</span><br><span class="line">    <span class="comment">//升级之前的检查。</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">pre_upgrade</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), &amp;<span class="symbol">&#x27;static</span> <span class="type">str</span>&gt; &#123;&#125;</span><br><span class="line">    <span class="comment">//升级之后的处理。</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">post_upgrade</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), &amp;<span class="symbol">&#x27;static</span> <span class="type">str</span>&gt; &#123;&#125;</span><br><span class="line">    <span class="comment">//在一个pallet上实现此函数后可以在此函数中长时间的执行需要链下执行的功能。该函数会在每次区块导入的时候调用。后续讲ocw使用的时候就需要和这个函数打交道</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">offchain_worker</span>(_n: BlockNumber) &#123;&#125;</span><br><span class="line">    <span class="comment">//运行集成测试。</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">integrity_test</span>() &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-config">3. Config</h2>
+<p>pallet的配置部分，主要是定义常量、数据类型。该内容比较简单，这里只大概介绍下。<br>
+如下定义数据类型：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::config]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: frame_system::Config &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Event</span>: <span class="built_in">From</span>&lt;Event&lt;<span class="keyword">Self</span>&gt;&gt; </span><br><span class="line">    + IsType&lt;&lt;<span class="keyword">Self</span> <span class="keyword">as</span> frame_system::Config&gt;::Event&gt;;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//（1）声明了StudentNumberType和StudentNameType</span></span><br><span class="line">    <span class="comment">//声明StudentNumber类型</span></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">StudentNumberType</span>: Member</span><br><span class="line">      + Parameter</span><br><span class="line">      + AtLeast32BitUnsigned</span><br><span class="line">      + Codec</span><br><span class="line">      + <span class="built_in">Copy</span></span><br><span class="line">      + <span class="built_in">Debug</span></span><br><span class="line">      + <span class="built_in">Default</span></span><br><span class="line">      + MaxEncodedLen</span><br><span class="line">      + MaybeSerializeDeserialize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//声明StudentName类型</span></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">StudentNameType</span>: Parameter</span><br><span class="line">      + Member</span><br><span class="line">      + AtLeast32BitUnsigned</span><br><span class="line">      + Codec</span><br><span class="line">      + <span class="built_in">Default</span></span><br><span class="line">      + <span class="built_in">From</span>&lt;<span class="type">u128</span>&gt;</span><br><span class="line">      + <span class="built_in">Into</span>&lt;<span class="type">u128</span>&gt;</span><br><span class="line">      + <span class="built_in">Copy</span></span><br><span class="line">      + MaxEncodedLen</span><br><span class="line">      + MaybeSerializeDeserialize</span><br><span class="line">      + <span class="built_in">Debug</span>;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>在runtime/src/lib.rs中引入的时候，在设置具体类型，确保了pallet更通用：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_use_config2</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">StudentNumberType</span> = <span class="type">u32</span>;   <span class="comment">//指定具体的类型</span></span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">StudentNameType</span> = <span class="type">u128</span>;    <span class="comment">//指定具体的类型</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="总结">总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/6fdf0de9/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Substrate/" rel="tag">Substrate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/90c002dd/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            substrate进阶(5)-不同pallet之间的使用
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/c630a4ea/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">substrate进阶(3)-pallet结构之storage、event、error</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

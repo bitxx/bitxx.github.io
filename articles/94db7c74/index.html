@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>substrate加密猫 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/substrate/pallet应用/substrate加密猫"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  substrate加密猫
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/94db7c74/" class="article-date">
+  <time datetime="2022-08-30T06:26:32.000Z" itemprop="datePublished">2022-08-30</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/">Substrate</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/pallet%E5%BA%94%E7%94%A8/">pallet应用</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">3.4k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">18 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>通过加密猫案例，来完整了解下substrate的整个操作。新版substrate官方文档貌似已经移除了加密猫的实现，以下是使用新版substrate代码结合旧的文档整合而成。<br>
+代码结合最新的substrate框架做了调整，已亲自完整测试，按本文操作，该项目可以成功运行。</p>
+<span id="more"></span>  
+<h2 id="1-概述">1. 概述</h2>
+<p>加密猫现在在各大平台都已经出现了其身影，本文主要实现以下功能：</p>
+<ul>
+<li>通过一些原始来源或者通过使用现有小猫进行繁殖创造</li>
+<li>以其所有者设定的价格出售</li>
+<li>从一个所有者转移到另一个所有者</li>
+</ul>
+<p>大体说明：substrate会涉及到一个权重(weights)的概念，会让开发者考虑函数的复杂度，类似于以太坊中gas的高低。本文我们统一<code>weight=100</code></p>
+<h2 id="2-根据模板template-node创建对应的kitties项目框架">2. 根据模板template-node创建对应的kitties项目框架</h2>
+<p><code>kickstart</code>这是个模板工具，通过该工具，可以将模板生成为我们需要的项目框架，安装：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo install kickstart</span><br></pre></td></tr></table></figure>
+<p>根据模板创建项目框架：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kickstart https://github.com/sacha-l/kickstart-substrate</span><br></pre></td></tr></table></figure>
+<p>会自动指定<code>tmp</code>目录，然后会提示输入节点名称以及pallet名称，这里依次输入：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kitties</span><br><span class="line">kitties</span><br></pre></td></tr></table></figure>
+<p>然后就能生成项目框架文件了，具体各目录作用，这里就不解释了。看前面文章去。<br>
+项目根目录的名称现在应该是：<code>kitties</code>，全局搜索项目，将文本<code>TemplateModule</code>都替换为：<code>SubstrateKitties</code>，后续开发可读性更高一些</p>
+<p>然后就可以编译和启动项目了：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">编译</span></span><br><span class="line">cargo build --release</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">或者使用入下编译</span></span><br><span class="line">cargo +nightly build --release</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">启动</span></span><br><span class="line">./target/release/node-kitties --dev</span><br></pre></td></tr></table></figure>
+<h2 id="3-实现pallet-kitties脚手架及其具体功能">3. 实现pallet_kitties脚手架及其具体功能</h2>
+<p>也就是pallet的整体框架<br>
+<code>pallets/kitties/src</code>目录下，删除<code>benchmarking.rs</code>、<code>mock.rs</code>、<code>tests.rs</code>这三个文件。<code>lib.rs</code>文件中的内容清空，然后加入如下内容：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/// Edit this file to define custom logic or remove it if it is not needed.</span></span><br><span class="line"><span class="comment">/// Learn more about FRAME and the core library of Substrate FRAME pallets:</span></span><br><span class="line"><span class="comment">/// &lt;https://docs.substrate.io/v3/runtime/frame&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#[frame_support::pallet]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> pallet &#123;</span><br><span class="line">    <span class="keyword">use</span> frame_support::&#123;</span><br><span class="line">        dispatch::&#123;DispatchResult&#125;,</span><br><span class="line">        pallet_prelude::*,</span><br><span class="line">        sp_runtime::traits::&#123;Hash&#125;,</span><br><span class="line">        traits::&#123;Currency, ExistenceRequirement, Randomness&#125;,</span><br><span class="line">        transactional,</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">use</span> frame_system::pallet_prelude::*;</span><br><span class="line">    <span class="keyword">use</span> sp_io::hashing::blake2_128;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Configure the pallet by specifying the parameters and types on which it depends.</span></span><br><span class="line">    <span class="meta">#[pallet::config]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: frame_system::Config &#123;</span><br><span class="line">        <span class="comment">/// Because this pallet emits events, it depends on the runtime&#x27;s definition of an event.</span></span><br><span class="line">        <span class="keyword">type</span> <span class="title class_">Event</span>: <span class="built_in">From</span>&lt;Event&lt;<span class="keyword">Self</span>&gt;&gt; + IsType&lt;&lt;<span class="keyword">Self</span> <span class="keyword">as</span> frame_system::Config&gt;::Event&gt;;</span><br><span class="line">        <span class="comment">/// The Currency handler for the Kitties pallet.</span></span><br><span class="line">        <span class="keyword">type</span> <span class="title class_">Currency</span>: Currency&lt;<span class="keyword">Self</span>::AccountId&gt;;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//TODO Part II: Specify the custom types for our runtime.</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[pallet::pallet]</span></span><br><span class="line">    <span class="meta">#[pallet::generate_store(pub(super) trait Store)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pallet</span>&lt;T&gt;(_);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The pallet&#x27;s runtime storage items.</span></span><br><span class="line">    <span class="comment">// https://docs.substrate.io/v3/runtime/storage</span></span><br><span class="line">    <span class="meta">#[pallet::storage]</span></span><br><span class="line">    <span class="meta">#[pallet::getter(fn something)]</span></span><br><span class="line">    <span class="comment">// Learn more about declaring storage items:</span></span><br><span class="line">    <span class="comment">// https://docs.substrate.io/v3/runtime/storage#declaring-storage-items</span></span><br><span class="line">    <span class="comment">// ACTION: store item to keep a count of all existing Kitties.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">type</span> <span class="title class_">Something</span>&lt;T&gt; = StorageValue&lt;_, <span class="type">u32</span>&gt;;</span><br><span class="line">    <span class="comment">// TODO Part II: Remaining sotre items.</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// TODO Part III: Our pallet&#x27;s genesis configuration.</span></span><br><span class="line">    <span class="comment">// #[pallet::genesis_config]</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Pallets use events to inform users when important changes are made.</span></span><br><span class="line">    <span class="comment">// https://docs.substrate.io/v3/runtime/events-and-errors</span></span><br><span class="line">    <span class="meta">#[pallet::event]</span></span><br><span class="line">    <span class="meta">#[pallet::generate_deposit(pub(super) fn deposit_event)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Event</span>&lt;T: Config&gt; &#123;</span><br><span class="line">        <span class="comment">/// Event documentation should end with an array that provides descriptive names for event</span></span><br><span class="line">        <span class="comment">// TODO Part III</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Errors inform users that something went wrong.</span></span><br><span class="line">    <span class="meta">#[pallet::error]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Error</span>&lt;T&gt; &#123;</span><br><span class="line">        <span class="comment">///Error names should be descriptive.</span></span><br><span class="line">        <span class="comment">/// Errors should have helpful documentation associated with them.</span></span><br><span class="line">        <span class="comment">// TODO Part III</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Dispatchable functions allows users to interact with the pallet and invoke state changes.</span></span><br><span class="line">    <span class="comment">// These functions materialize as &quot;extrinsics&quot;, which are often compared to transactions.</span></span><br><span class="line">    <span class="comment">// Dispatchable functions must be annotated with a weight and must return a DispatchResult.</span></span><br><span class="line">    <span class="meta">#[pallet::call]</span></span><br><span class="line">    <span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">        <span class="comment">//TODO Part III: create_kitty</span></span><br><span class="line">        <span class="comment">//TODO Part III: set_price</span></span><br><span class="line">        <span class="comment">//TODO Part III: transfer</span></span><br><span class="line">        <span class="comment">//TODO Part III: buy_kitty</span></span><br><span class="line">        <span class="comment">//TODO Part III: breed_kitty</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//<span class="doctag">TODO:</span> Parts II： helper function for Kitty struct</span></span><br><span class="line">    <span class="comment">//简单说，就是内部方法，用来支持上面#[pallet::call]中的方法使用</span></span><br><span class="line">    <span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">        <span class="comment">//TODO Part III: helper functions for dispatchable functions</span></span><br><span class="line">        <span class="comment">//<span class="doctag">TODO:</span> increment_noce, random_hash, mint, transfer_from</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中todo内容为后续要加入的内容（即业务逻辑）</p>
+<h2 id="3-1-cargo-toml添加依赖">3.1 Cargo.toml添加依赖</h2>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[dependencies]</span></span><br><span class="line"><span class="attr">sp-io</span> = &#123; default-features = <span class="literal">false</span>, version = <span class="string">&quot;6.0.0&quot;</span>, git = <span class="string">&quot;https://github.com/paritytech/substrate.git&quot;</span>, branch = <span class="string">&quot;polkadot-v0.9.26&quot;</span> &#125;</span><br><span class="line"><span class="attr">serde</span> = &#123; default-features = <span class="literal">false</span>, version = <span class="string">&quot;1.0.119&quot;</span>&#125;</span><br><span class="line"><span class="attr">log</span> = &#123; default-features = <span class="literal">false</span>, version = <span class="string">&quot;0.4.14&quot;</span> &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-1-实现存储">3.1 实现存储</h3>
+<p>此时pallets中的lib.rs内容如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#[frame_support::pallet]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> pallet &#123;</span><br><span class="line">    <span class="keyword">use</span> frame_support::&#123;</span><br><span class="line">        dispatch::&#123;DispatchResult&#125;,</span><br><span class="line">        pallet_prelude::*,</span><br><span class="line">        sp_runtime::traits::&#123;Hash&#125;,</span><br><span class="line">        traits::&#123;Currency, ExistenceRequirement, Randomness&#125;,</span><br><span class="line">        transactional,</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">use</span> frame_system::pallet_prelude::*;</span><br><span class="line">    <span class="keyword">use</span> sp_io::hashing::blake2_128;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]</span></span><br><span class="line">    <span class="keyword">use</span> serde::&#123;Deserialize, Serialize&#125;;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">type</span> <span class="title class_">AccountOf</span>&lt;T&gt; = &lt;T <span class="keyword">as</span> frame_system::Config&gt;::AccountId;</span><br><span class="line">	<span class="keyword">type</span> <span class="title class_">BalanceOf</span>&lt;T&gt; =</span><br><span class="line">	&lt;&lt;T <span class="keyword">as</span> Config&gt;::Currency <span class="keyword">as</span> Currency&lt;&lt;T <span class="keyword">as</span> frame_system::Config&gt;::AccountId&gt;&gt;::Balance;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Struct for holding Kitty information.</span></span><br><span class="line">    <span class="comment">// MaxEncodedLen务必需要加上，否则编译无法知晓结构体大小</span></span><br><span class="line">    <span class="meta">#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]</span></span><br><span class="line">    <span class="meta">#[scale_info(skip_type_params(T))]</span></span><br><span class="line">    <span class="meta">#[codec(mel_bound())]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Kitty</span>&lt;T: Config&gt; &#123;</span><br><span class="line">        <span class="keyword">pub</span> dna: [<span class="type">u8</span>; <span class="number">16</span>],</span><br><span class="line">        <span class="keyword">pub</span> price: <span class="type">Option</span>&lt;BalanceOf&lt;T&gt;&gt;,</span><br><span class="line">        <span class="keyword">pub</span> gender: Gender,</span><br><span class="line">        <span class="keyword">pub</span> owner: AccountOf&lt;T&gt;,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// MaxEncodedLen务必需要加上，否则编译无法知晓结构体大小</span></span><br><span class="line">    <span class="meta">#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]</span></span><br><span class="line">    <span class="meta">#[cfg_attr(feature = <span class="string">&quot;std&quot;</span>, derive(Serialize, Deserialize))]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Gender</span> &#123;</span><br><span class="line">        Male,</span><br><span class="line">        Female,</span><br><span class="line">    &#125;</span><br><span class="line">	<span class="comment">/// Configure the pallet by specifying the parameters and types on which it depends.</span></span><br><span class="line">	<span class="meta">#[pallet::config]</span></span><br><span class="line">	<span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: frame_system::Config &#123;</span><br><span class="line">		<span class="comment">//...</span></span><br><span class="line">		<span class="comment">//Part II: Specify the custom types for our runtime.</span></span><br><span class="line">		<span class="comment">//新增随机数配置</span></span><br><span class="line">		<span class="keyword">type</span> <span class="title class_">KittyRandomness</span>: Randomness&lt;<span class="keyword">Self</span>::Hash, <span class="keyword">Self</span>::BlockNumber&gt;;</span><br><span class="line">		<span class="meta">#[pallet::constant]</span></span><br><span class="line">		<span class="keyword">type</span> <span class="title class_">MaxKittyOwned</span>: Get&lt;<span class="type">u32</span>&gt;;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	<span class="meta">#[pallet::storage]</span></span><br><span class="line">	<span class="meta">#[pallet::getter(fn kitty_cnt)]</span></span><br><span class="line">	<span class="title function_ invoke__">pub</span>(<span class="keyword">super</span>) <span class="keyword">type</span> <span class="title class_">KittyCnt</span>&lt;T: Config&gt; = StorageValue&lt;_, <span class="type">u64</span>, ValueQuery&gt;;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//存储资产</span></span><br><span class="line">	<span class="meta">#[pallet::storage]</span></span><br><span class="line">	<span class="meta">#[pallet::getter(fn kitties)]</span></span><br><span class="line">	<span class="title function_ invoke__">pub</span>(<span class="keyword">super</span>) <span class="keyword">type</span> <span class="title class_">Kitties</span>&lt;T: Config&gt; = StorageMap&lt;_, Twox64Concat, T::Hash, Kitty&lt;T&gt;&gt;;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//存储资产所有权</span></span><br><span class="line">	<span class="meta">#[pallet::storage]</span></span><br><span class="line">	<span class="meta">#[pallet::getter(fn kitties_owned)]</span></span><br><span class="line">	<span class="comment">/// Keeps track of what accounts own what Kitty.</span></span><br><span class="line">	<span class="title function_ invoke__">pub</span>(<span class="keyword">super</span>) <span class="keyword">type</span> <span class="title class_">KittiesOwned</span>&lt;T: Config&gt; = StorageMap&lt;_, Twox64Concat, T::AccountId, BoundedVec&lt;T::Hash, T::MaxKittyOwned&gt;, ValueQuery&gt;;</span><br><span class="line">	<span class="comment">//...</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//Parts II： helper function for Kitty struct</span></span><br><span class="line">	<span class="comment">//简单说，就是内部方法，用来支持上面#[pallet::call]中的方法使用</span></span><br><span class="line">	<span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">		<span class="comment">//Part III: helper functions for dispatchable functions</span></span><br><span class="line">		<span class="comment">//increment_noce, random_hash, mint, transfer_from</span></span><br><span class="line">		<span class="comment">//生成性别</span></span><br><span class="line">		<span class="keyword">fn</span> <span class="title function_">gen_gender</span>() <span class="punctuation">-&gt;</span> Gender &#123;</span><br><span class="line">			<span class="keyword">let</span> <span class="variable">random</span> = T::KittyRandomness::<span class="title function_ invoke__">random</span>(&amp;<span class="string">b&quot;gender&quot;</span>[..]).<span class="number">0</span>;</span><br><span class="line">			<span class="keyword">match</span> random.<span class="title function_ invoke__">as_ref</span>()[<span class="number">0</span>] % <span class="number">2</span> &#123;</span><br><span class="line">				<span class="number">0</span> =&gt; Gender::Male,</span><br><span class="line">				_ =&gt; Gender::Female,</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//生成DNA</span></span><br><span class="line">		<span class="keyword">fn</span> <span class="title function_">gen_dna</span>() <span class="punctuation">-&gt;</span> [<span class="type">u8</span>; <span class="number">16</span>] &#123;</span><br><span class="line">			<span class="keyword">let</span> <span class="variable">payload</span> = (</span><br><span class="line">				T::KittyRandomness::<span class="title function_ invoke__">random</span>(&amp;<span class="string">b&quot;dna&quot;</span>[..]).<span class="number">0</span>,</span><br><span class="line">				&lt;frame_system::Pallet&lt;T&gt;&gt;::<span class="title function_ invoke__">block_number</span>(),</span><br><span class="line">			);</span><br><span class="line">			payload.<span class="title function_ invoke__">using_encoded</span>(blake2_128)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="http://xn--runtimelib-1t2pu689a.rs">runtime中的lib.rs</a>：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//...</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_kitties</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Currency</span> = Balances;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">KittyRandomness</span> = RandomnessCollectiveFlip;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">MaxKittyOwned</span> = MaxKittyOwned;</span><br><span class="line">&#125;</span><br><span class="line">parameter_types! &#123;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">const</span> MaxKittyOwned: <span class="type">u32</span> = <span class="number">9999</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-公-私有函数以及事件的实现">3.2 公/私有函数以及事件的实现</h3>
+<p>其中也包括<br>
+主要实现如下内容：</p>
+<ol>
+<li>create_kitty(): 允许一个账户创建一个kitty的函数</li>
+<li>mint()：更新我们的pallet的存储和error检查的函数，会被create_kitty调用。</li>
+<li>pallet Events：使用FRAME的#[pallet::event]属性</li>
+<li>create_kitty为公有函数，会调用私有函数mint。</li>
+<li>其余用于交互的功能：设置交易价格、交易、购买、繁殖</li>
+</ol>
+<p>公有函数是在其中实现，这是要对用户开放的：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::call]</span> </span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line"> <span class="comment">//...   </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>私有函数的实现，是在其中实现，不带有宏：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line"> <span class="comment">//...   </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>新增代码如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::event]</span></span><br><span class="line"><span class="meta">#[pallet::generate_deposit(pub (super) fn deposit_event)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Event</span>&lt;T: Config&gt; &#123;</span><br><span class="line">    <span class="comment">/// Event documentation should end with an array that provides descriptive names for event</span></span><br><span class="line">    <span class="comment">// Part III</span></span><br><span class="line">    <span class="comment">//添加下面这几行</span></span><br><span class="line">    <span class="comment">/// A new Kitty was sucessfully created. \[sender, kitty_id\]</span></span><br><span class="line">    <span class="title function_ invoke__">Created</span>(T::AccountId, T::Hash),</span><br><span class="line">    <span class="comment">/// Kitty price was sucessfully set. \[sender, kitty_id, new_price\]</span></span><br><span class="line">    <span class="title function_ invoke__">PriceSet</span>(T::AccountId, T::Hash, <span class="type">Option</span>&lt;BalanceOf&lt;T&gt;&gt;),</span><br><span class="line">    <span class="comment">/// A Kitty was sucessfully transferred. \[from, to, kitty_id\]</span></span><br><span class="line">    <span class="title function_ invoke__">Transferred</span>(T::AccountId, T::AccountId, T::Hash),</span><br><span class="line">    <span class="comment">/// A Kitty was sucessfully bought. \[buyer, seller, kitty_id, bid_price\]</span></span><br><span class="line">    <span class="title function_ invoke__">Bought</span>(T::AccountId, T::AccountId, T::Hash, BalanceOf&lt;T&gt;),</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Errors inform users that something went wrong.</span></span><br><span class="line"><span class="meta">#[pallet::error]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Error</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="comment">///Error names should be descriptive.</span></span><br><span class="line">    <span class="comment">/// Errors should have helpful documentation associated with them.</span></span><br><span class="line">    <span class="comment">// Part III</span></span><br><span class="line">    <span class="comment">/// Handles arithemtic overflow when incrementing the Kitty counter.</span></span><br><span class="line">    KittyCntOverflow,</span><br><span class="line">    <span class="comment">/// An account cannot own more Kitties than `MaxKittyCount`.</span></span><br><span class="line">    ExceedMaxKittyOwned,</span><br><span class="line">    <span class="comment">/// Buyer cannot be the owner.</span></span><br><span class="line">    BuyerIsKittyOwner,</span><br><span class="line">    <span class="comment">/// Cannot transfer a kitty to its owner.</span></span><br><span class="line">    TransferToSelf,</span><br><span class="line">    <span class="comment">/// Handles checking whether the Kitty exists.</span></span><br><span class="line">    KittyNotExist,</span><br><span class="line">    <span class="comment">/// Handles checking that the Kitty is owned by the account transferring, buying or setting a price for it.</span></span><br><span class="line">    NotKittyOwner,</span><br><span class="line">    <span class="comment">/// Ensures the Kitty is for sale.</span></span><br><span class="line">    KittyNotForSale,</span><br><span class="line">    <span class="comment">/// Ensures that the buying price is greater than the asking price.</span></span><br><span class="line">    KittyBidPriceTooLow,</span><br><span class="line">    <span class="comment">/// Ensures that an account has enough funds to purchase a Kitty.</span></span><br><span class="line">    NotEnoughBalance,</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//...</span></span><br><span class="line"><span class="comment">//公共方法</span></span><br><span class="line"><span class="meta">#[pallet::call]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="comment">//Part III: create_kitty 创建</span></span><br><span class="line">    <span class="meta">#[pallet::weight(100)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">create_kitty</span>(origin: OriginFor&lt;T&gt;) <span class="punctuation">-&gt;</span> DispatchResult &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">sender</span> = <span class="title function_ invoke__">ensure_signed</span>(origin)?; <span class="comment">// &lt;- add this line</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">kitty_id</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">mint</span>(&amp;sender, <span class="literal">None</span>, <span class="literal">None</span>)?;</span><br><span class="line">        <span class="comment">// &lt;- add this line</span></span><br><span class="line">        <span class="comment">// Logging to the console</span></span><br><span class="line">        log::info!(<span class="string">&quot;A kitty is born with ID: &#123;:?&#125;.&quot;</span>, kitty_id); <span class="comment">// &lt;- add this line</span></span><br><span class="line">        <span class="comment">// ACTION #4: Deposit `Created` event</span></span><br><span class="line">        <span class="comment">//发出事件创建</span></span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::<span class="title function_ invoke__">Created</span>(sender, kitty_id));</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//Part III: set_price 设置价格</span></span><br><span class="line">    <span class="meta">#[pallet::weight(100)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">set_price</span>(</span><br><span class="line">        origin: OriginFor&lt;T&gt;,</span><br><span class="line">        kitty_id: T::Hash,</span><br><span class="line">        new_price: <span class="type">Option</span>&lt;BalanceOf&lt;T&gt;&gt;,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> DispatchResult &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">sender</span> = <span class="title function_ invoke__">ensure_signed</span>(origin)?;</span><br><span class="line">        <span class="comment">// Ensure the kitty exists and is called by the kitty owner</span></span><br><span class="line">        ensure!(<span class="keyword">Self</span>::<span class="title function_ invoke__">is_kitty_owner</span>(&amp;kitty_id, &amp;sender)?, &lt;Error&lt;T&gt;&gt;::NotKittyOwner);</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">kitty</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">kitties</span>(&amp;kitty_id).<span class="title function_ invoke__">ok_or</span>(&lt;Error&lt;T&gt;&gt;::KittyNotExist)?;</span><br><span class="line">        kitty.price = new_price.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        &lt;Kitties&lt;T&gt;&gt;::<span class="title function_ invoke__">insert</span>(&amp;kitty_id, kitty);</span><br><span class="line">        <span class="comment">// Deposit a &quot;PriceSet&quot; event.</span></span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::<span class="title function_ invoke__">PriceSet</span>(sender, kitty_id, new_price));</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//Part III: transfer 交易</span></span><br><span class="line">    <span class="meta">#[pallet::weight(100)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">transfer</span>(</span><br><span class="line">        origin: OriginFor&lt;T&gt;,</span><br><span class="line">        to: T::AccountId,</span><br><span class="line">        kitty_id: T::Hash,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> DispatchResult &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">from</span> = <span class="title function_ invoke__">ensure_signed</span>(origin)?;</span><br><span class="line">        <span class="comment">// Ensure the kitty exists and is called by the kitty owner</span></span><br><span class="line">        ensure!(<span class="keyword">Self</span>::<span class="title function_ invoke__">is_kitty_owner</span>(&amp;kitty_id, &amp;from)?, &lt;Error&lt;T&gt;&gt;::NotKittyOwner);</span><br><span class="line">        <span class="comment">// Verify the kitty is not transferring back to its owner.</span></span><br><span class="line">        ensure!(from != to, &lt;Error&lt;T&gt;&gt;::TransferToSelf);</span><br><span class="line">        <span class="comment">// Verify the recipient has the capacity to receive one more kitty</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">to_owned</span> = &lt;KittiesOwned&lt;T&gt;&gt;::<span class="title function_ invoke__">get</span>(&amp;to);</span><br><span class="line">        ensure!((to_owned.<span class="title function_ invoke__">len</span>() <span class="keyword">as</span> <span class="type">u32</span>) &lt; T::MaxKittyOwned::<span class="title function_ invoke__">get</span>(), &lt;Error&lt;T&gt;&gt;::ExceedMaxKittyOwned);</span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">transfer_kitty_to</span>(&amp;kitty_id, &amp;to)?;</span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::<span class="title function_ invoke__">Transferred</span>(from, to, kitty_id));</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//Part III: buy_kitty 购买</span></span><br><span class="line">    <span class="meta">#[transactional]</span></span><br><span class="line">    <span class="meta">#[pallet::weight(100)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">buy_kitty</span>(</span><br><span class="line">        origin: OriginFor&lt;T&gt;,</span><br><span class="line">        kitty_id: T::Hash,</span><br><span class="line">        bid_price: BalanceOf&lt;T&gt;</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> DispatchResult &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">buyer</span> = <span class="title function_ invoke__">ensure_signed</span>(origin)?;</span><br><span class="line">        <span class="comment">// Check the kitty exists and buyer is not the current kitty owner</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">kitty</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">kitties</span>(&amp;kitty_id).<span class="title function_ invoke__">ok_or</span>(&lt;Error&lt;T&gt;&gt;::KittyNotExist)?;</span><br><span class="line">        ensure!(kitty.owner != buyer, &lt;Error&lt;T&gt;&gt;::BuyerIsKittyOwner);</span><br><span class="line">        <span class="comment">// Check the kitty is for sale and the kitty ask price &lt;= bid_price</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(ask_price) = kitty.price &#123;</span><br><span class="line">            ensure!(ask_price &lt;= bid_price, &lt;Error&lt;T&gt;&gt;::KittyBidPriceTooLow);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="title function_ invoke__">Err</span>(&lt;Error&lt;T&gt;&gt;::KittyNotForSale)?;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// Check the buyer has enough free balance</span></span><br><span class="line">        ensure!(T::Currency::<span class="title function_ invoke__">free_balance</span>(&amp;buyer) &gt;= bid_price, &lt;Error&lt;T&gt;&gt;::NotEnoughBalance);</span><br><span class="line">        <span class="comment">// Verify the buyer has the capacity to receive one more kitty</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">to_owned</span> = &lt;KittiesOwned&lt;T&gt;&gt;::<span class="title function_ invoke__">get</span>(&amp;buyer);</span><br><span class="line">        ensure!((to_owned.<span class="title function_ invoke__">len</span>() <span class="keyword">as</span> <span class="type">u32</span>) &lt; T::MaxKittyOwned::<span class="title function_ invoke__">get</span>(), &lt;Error&lt;T&gt;&gt;::ExceedMaxKittyOwned);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">seller</span> = kitty.owner.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        <span class="comment">// Transfer the amount from buyer to seller</span></span><br><span class="line">        T::Currency::<span class="title function_ invoke__">transfer</span>(&amp;buyer, &amp;seller, bid_price, ExistenceRequirement::KeepAlive)?;</span><br><span class="line">        <span class="comment">// Transfer the kitty from seller to buyer</span></span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">transfer_kitty_to</span>(&amp;kitty_id, &amp;buyer)?;</span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::<span class="title function_ invoke__">Bought</span>(buyer, seller, kitty_id, bid_price));</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//Part III: breed_kitty 繁殖</span></span><br><span class="line">    <span class="meta">#[pallet::weight(100)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">breed_kitty</span>(</span><br><span class="line">        origin: OriginFor&lt;T&gt;,</span><br><span class="line">        parent1: T::Hash,</span><br><span class="line">        parent2: T::Hash</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> DispatchResult &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">sender</span> = <span class="title function_ invoke__">ensure_signed</span>(origin)?;</span><br><span class="line">        <span class="comment">// Check: Verify `sender` owns both kitties (and both kitties exist).</span></span><br><span class="line">        ensure!(<span class="keyword">Self</span>::<span class="title function_ invoke__">is_kitty_owner</span>(&amp;parent1, &amp;sender)?, &lt;Error&lt;T&gt;&gt;::NotKittyOwner);</span><br><span class="line">        ensure!(<span class="keyword">Self</span>::<span class="title function_ invoke__">is_kitty_owner</span>(&amp;parent2, &amp;sender)?, &lt;Error&lt;T&gt;&gt;::NotKittyOwner);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">new_dna</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">breed_dna</span>(&amp;parent1, &amp;parent2)?;</span><br><span class="line">        <span class="keyword">Self</span>::<span class="title function_ invoke__">mint</span>(&amp;sender, <span class="title function_ invoke__">Some</span>(new_dna), <span class="literal">None</span>)?;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//私有方法：</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="comment">//Part III: helper functions for dispatchable functions</span></span><br><span class="line">    <span class="comment">//increment_noce, random_hash, mint, transfer_from</span></span><br><span class="line">    <span class="comment">//生成性别</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">gen_gender</span>() <span class="punctuation">-&gt;</span> Gender &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">random</span> = T::KittyRandomness::<span class="title function_ invoke__">random</span>(&amp;<span class="string">b&quot;gender&quot;</span>[..]).<span class="number">0</span>;</span><br><span class="line">        <span class="keyword">match</span> random.<span class="title function_ invoke__">as_ref</span>()[<span class="number">0</span>] % <span class="number">2</span> &#123;</span><br><span class="line">            <span class="number">0</span> =&gt; Gender::Male,</span><br><span class="line">            _ =&gt; Gender::Female,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//生成DNA</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">gen_dna</span>() <span class="punctuation">-&gt;</span> [<span class="type">u8</span>; <span class="number">16</span>] &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">payload</span> = (</span><br><span class="line">            T::KittyRandomness::<span class="title function_ invoke__">random</span>(&amp;<span class="string">b&quot;dna&quot;</span>[..]).<span class="number">0</span>,</span><br><span class="line">            &lt;frame_system::Pallet&lt;T&gt;&gt;::<span class="title function_ invoke__">block_number</span>(),</span><br><span class="line">        );</span><br><span class="line">        payload.<span class="title function_ invoke__">using_encoded</span>(blake2_128)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">mint</span>(</span><br><span class="line">        owner: &amp;T::AccountId,</span><br><span class="line">        dna: <span class="type">Option</span>&lt;[<span class="type">u8</span>; <span class="number">16</span>]&gt;,</span><br><span class="line">        gender: <span class="type">Option</span>&lt;Gender&gt;,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;T::Hash, Error&lt;T&gt;&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">kitty</span> = Kitty::&lt;T&gt; &#123;</span><br><span class="line">            dna: dna.<span class="title function_ invoke__">unwrap_or_else</span>(<span class="keyword">Self</span>::gen_dna),</span><br><span class="line">            price: <span class="literal">None</span>,</span><br><span class="line">            gender: gender.<span class="title function_ invoke__">unwrap_or_else</span>(<span class="keyword">Self</span>::gen_gender),</span><br><span class="line">            owner: owner.<span class="title function_ invoke__">clone</span>(),</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">kitty_id</span> = T::Hashing::<span class="title function_ invoke__">hash_of</span>(&amp;kitty);</span><br><span class="line">        <span class="comment">// Performs this operation first as it may fail</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">new_cnt</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">kitty_cnt</span>().<span class="title function_ invoke__">checked_add</span>(<span class="number">1</span>)</span><br><span class="line">            .<span class="title function_ invoke__">ok_or</span>(&lt;Error&lt;T&gt;&gt;::KittyCntOverflow)?;</span><br><span class="line">        <span class="comment">// Performs this operation first because as it may fail</span></span><br><span class="line">        &lt;KittiesOwned&lt;T&gt;&gt;::<span class="title function_ invoke__">try_mutate</span>(&amp;owner, |kitty_vec| &#123;</span><br><span class="line">            kitty_vec.<span class="title function_ invoke__">try_push</span>(kitty_id)</span><br><span class="line">        &#125;).<span class="title function_ invoke__">map_err</span>(|_| &lt;Error&lt;T&gt;&gt;::ExceedMaxKittyOwned)?;</span><br><span class="line">        &lt;Kitties&lt;T&gt;&gt;::<span class="title function_ invoke__">insert</span>(kitty_id, kitty);</span><br><span class="line">        &lt;KittyCnt&lt;T&gt;&gt;::<span class="title function_ invoke__">put</span>(new_cnt);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(kitty_id)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//将is_kitty_owner函数的代码放在mint函数下方</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">is_kitty_owner</span>(kitty_id: &amp;T::Hash, acct: &amp;T::AccountId) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">bool</span>, Error&lt;T&gt;&gt; &#123;</span><br><span class="line">        <span class="keyword">match</span> <span class="keyword">Self</span>::<span class="title function_ invoke__">kitties</span>(kitty_id) &#123;</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(kitty) =&gt; <span class="title function_ invoke__">Ok</span>(kitty.owner == *acct),</span><br><span class="line">            <span class="literal">None</span> =&gt; <span class="title function_ invoke__">Err</span>(&lt;Error&lt;T&gt;&gt;::KittyNotExist)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[transactional]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">transfer_kitty_to</span>(</span><br><span class="line">        kitty_id: &amp;T::Hash,</span><br><span class="line">        to: &amp;T::AccountId,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), &amp;<span class="symbol">&#x27;static</span> <span class="type">str</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">kitty</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">kitties</span>(&amp;kitty_id).<span class="title function_ invoke__">ok_or</span>(&lt;Error&lt;T&gt;&gt;::KittyNotExist)?;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">prev_owner</span> = kitty.owner.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        <span class="comment">// Remove `kitty_id` from the KittyOwned vector of `prev_kitty_owner`</span></span><br><span class="line">        &lt;KittiesOwned&lt;T&gt;&gt;::<span class="title function_ invoke__">try_mutate</span>(&amp;prev_owner, |owned| &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(ind) = owned.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">position</span>(|&amp;id| id == *kitty_id) &#123;</span><br><span class="line">                owned.<span class="title function_ invoke__">swap_remove</span>(ind);</span><br><span class="line">                <span class="keyword">return</span> <span class="title function_ invoke__">Ok</span>(());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="title function_ invoke__">Err</span>(())</span><br><span class="line">        &#125;).<span class="title function_ invoke__">map_err</span>(|_| &lt;Error&lt;T&gt;&gt;::KittyNotExist)?;</span><br><span class="line">        <span class="comment">// Update the kitty owner</span></span><br><span class="line">        kitty.owner = to.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        <span class="comment">// Reset the ask price so the kitty is not for sale until `set_price()` is called</span></span><br><span class="line">        <span class="comment">// by the current owner.</span></span><br><span class="line">        kitty.price = <span class="literal">None</span>;</span><br><span class="line">        &lt;Kitties&lt;T&gt;&gt;::<span class="title function_ invoke__">insert</span>(kitty_id, kitty);</span><br><span class="line">        &lt;KittiesOwned&lt;T&gt;&gt;::<span class="title function_ invoke__">try_mutate</span>(to, |vec| &#123;</span><br><span class="line">            vec.<span class="title function_ invoke__">try_push</span>(*kitty_id)</span><br><span class="line">        &#125;).<span class="title function_ invoke__">map_err</span>(|_| &lt;Error&lt;T&gt;&gt;::ExceedMaxKittyOwned)?;</span><br><span class="line"></span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//繁殖</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">breed_dna</span>(parent1: &amp;T::Hash, parent2: &amp;T::Hash) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;[<span class="type">u8</span>; <span class="number">16</span>], Error&lt;T&gt;&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">dna1</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">kitties</span>(parent1).<span class="title function_ invoke__">ok_or</span>(&lt;Error&lt;T&gt;&gt;::KittyNotExist)?.dna;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">dna2</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">kitties</span>(parent2).<span class="title function_ invoke__">ok_or</span>(&lt;Error&lt;T&gt;&gt;::KittyNotExist)?.dna;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">new_dna</span> = <span class="keyword">Self</span>::<span class="title function_ invoke__">gen_dna</span>();</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..new_dna.<span class="title function_ invoke__">len</span>() &#123;</span><br><span class="line">            new_dna[i] = (new_dna[i] &amp; dna1[i]) | (!new_dna[i] &amp; dna2[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(new_dna)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4-初始化">4. 初始化</h2>
+<p>在<code>// TODO Part III: Our pallet's genesis configuration.</code>位置处加入如下代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[pallet::genesis_config]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">GenesisConfig</span>&lt;T: Config&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> kitties: <span class="type">Vec</span>&lt;(T::AccountId, [<span class="type">u8</span>; <span class="number">16</span>], Gender)&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Required to implement default for GenesisConfig.</span></span><br><span class="line"><span class="meta">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; <span class="built_in">Default</span> <span class="keyword">for</span> <span class="title class_">GenesisConfig</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">default</span>() <span class="punctuation">-&gt;</span> GenesisConfig&lt;T&gt; &#123;</span><br><span class="line">        GenesisConfig &#123; kitties: <span class="built_in">vec!</span>[] &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[pallet::genesis_build]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; GenesisBuild&lt;T&gt; <span class="keyword">for</span> <span class="title class_">GenesisConfig</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">build</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="comment">// When building a kitty from genesis config, we require the dna and gender to be supplied.</span></span><br><span class="line">        <span class="keyword">for</span> (acct, dna, gender) <span class="keyword">in</span> &amp;<span class="keyword">self</span>.kitties &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">_</span> = &lt;Pallet&lt;T&gt;&gt;::<span class="title function_ invoke__">mint</span>(acct, <span class="title function_ invoke__">Some</span>(dna.<span class="title function_ invoke__">clone</span>()), <span class="title function_ invoke__">Some</span>(gender.<span class="title function_ invoke__">clone</span>()));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同时为了生效，需要在<code>node/src/chain_spec.rs</code>的<code>testnet_genesis</code>的方法中加入如下代码：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">testnet_genesis</span>(</span><br><span class="line">	wasm_binary: &amp;[<span class="type">u8</span>],</span><br><span class="line">	initial_authorities: <span class="type">Vec</span>&lt;(AuraId, GrandpaId)&gt;,</span><br><span class="line">	root_key: AccountId,</span><br><span class="line">	endowed_accounts: <span class="type">Vec</span>&lt;AccountId&gt;,</span><br><span class="line">	_enable_println: <span class="type">bool</span>,</span><br><span class="line">) <span class="punctuation">-&gt;</span> GenesisConfig &#123;</span><br><span class="line">	GenesisConfig &#123;</span><br><span class="line">		<span class="comment">//...</span></span><br><span class="line">        <span class="comment">//加入如下代码</span></span><br><span class="line">		substrate_kitties: SubstrateKittiesConfig &#123;</span><br><span class="line">			kitties: <span class="built_in">vec!</span>[],</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同时，在<code>node/src/chain_spec.rs</code>的顶部加入：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> node_kitties_runtime::SubstrateKittiesConfig;</span><br></pre></td></tr></table></figure>
+<h2 id="5-编译并运行">5. 编译并运行</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">编译</span></span><br><span class="line">cargo build --release</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">运行</span></span><br><span class="line">./target/release/node-kitties --dev</span><br></pre></td></tr></table></figure>
+<h2 id="6-使用polkadot-js-apps-ui进行测试">6. 使用Polkadot-JS Apps UI进行测试</h2>
+<p>打开<a target="_blank" rel="noopener" href="https://polkadot.js.org/apps">polkadot-app</a> ，连接到本地节点，对<code>kitties</code>进行测试<br>
+前往&quot;开发者&quot;-&quot;交易&quot;中，调用<code>substrateKitties</code>，则可找到相关方法进行操作</p>
+<img src="/articles/94db7c74/1.png" class="" title="测试kitties">
+<h2 id="总结">总结</h2>
+<p>本文编辑完毕</p>
+<h2 id="参考">参考</h2>
+<p>[1] <a target="_blank" rel="noopener" href="https://learn.figment.io/tutorials/substrate-kitties-setup">Substrate Kitties - Basic Setup</a><br>
+[2] <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/1Yf6H6NoEOlpYQlBtuhy7A">使用substrate构建kitties链</a></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/94db7c74/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Substrate/" rel="tag">Substrate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/5b9fab93/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            substrate基础(13)-智能合约初体验
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/57d3ce21/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">WebAssembly(3)-康威生命游戏案例-交互</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

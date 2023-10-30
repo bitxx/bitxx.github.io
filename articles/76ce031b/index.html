@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>WebAssembly(2)-康威生命游戏案例 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-basetech/rust/WebAssembly/WebAssembly(2)-康威生命游戏案例"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  WebAssembly(2)-康威生命游戏案例
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/76ce031b/" class="article-date">
+  <time datetime="2022-08-29T06:16:37.000Z" itemprop="datePublished">2022-08-29</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/">基础技术</a> / <a class="article-category-link" href="/categories/%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/WebAssembly/">WebAssembly</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">1.9k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">10 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>通过案例来展示WebAssembly的应用</p>
+<span id="more"></span>  
+<h2 id="1-游戏规则和设计">1. 游戏规则和设计</h2>
+<ol>
+<li>规则：在一个二维方格中，每个方格的状态都为“生”或者“死”。每个方格对应的就是一个细胞，每个细胞和它的周围的八个方格相邻。在每个时间推移过程中，都会发生以下转换（<code>就是说，下一秒的状态，根据前一秒的状态来判断生死</code>）：
+<ul>
+<li>任何少于两个活邻居的活细胞都会死亡。</li>
+<li>任何有两个或三个活邻居的活细胞都能存活到下一代。</li>
+<li>任何一个有三个以上邻居的活细胞都会死亡。</li>
+<li>任何一个有三个活邻居的死细胞都会变成一个活细胞。</li>
+</ul>
+</li>
+<li>设计：创建一个固定大小的宇宙（二维方格），但是左边的尽头就是右边。</li>
+</ol>
+<h2 id="2-基本实现">2. 基本实现</h2>
+<p>以正常思路完成以上功能</p>
+<h3 id="2-1-rust实现">2.1 rust实现</h3>
+<p>计算和打印，都由rust来实现，这个只是简单的设计逻辑，具体注释都在代码中标注了<br>
+<code>lib.rs</code>文件中</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> wasm_bindgen::prelude::*;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[wasm_bindgen]</span></span><br><span class="line"><span class="meta">#[repr(u8)]</span>   <span class="comment">//表示下方枚举只占用8个bit</span></span><br><span class="line"><span class="meta">#[derive(Clone, Copy, Debug, PartialEq, Eq)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Cell</span> &#123;</span><br><span class="line">    Dead = <span class="number">0</span>,</span><br><span class="line">    Alive = <span class="number">1</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[wasm_bindgen]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Universe</span> &#123;</span><br><span class="line">    width: <span class="type">u32</span>,</span><br><span class="line">    height: <span class="type">u32</span>,</span><br><span class="line">    cells: <span class="type">Vec</span>&lt;Cell&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[wasm_bindgen]</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Universe</span> &#123;</span><br><span class="line">   <span class="comment">//初始化</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> Universe &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">w</span> = <span class="number">64</span>;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">h</span> = <span class="number">64</span>;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">cells</span> = (<span class="number">0</span>..w * h).<span class="title function_ invoke__">map</span>(|i| &#123;</span><br><span class="line">            <span class="keyword">if</span> i % <span class="number">2</span> == <span class="number">0</span> || i % <span class="number">7</span> == <span class="number">0</span> &#123;</span><br><span class="line">                Cell::Alive</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                Cell::Dead</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).<span class="title function_ invoke__">collect</span>();</span><br><span class="line">        Universe &#123;</span><br><span class="line">            width: w,</span><br><span class="line">            height: h,</span><br><span class="line">            cells,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">render</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">String</span> &#123;</span><br><span class="line">        <span class="keyword">self</span>.<span class="title function_ invoke__">to_string</span>()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//获取到一维数组中的索引</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">get_index</span>(&amp;<span class="keyword">self</span>, row: <span class="type">u32</span>, col: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> <span class="type">usize</span> &#123;</span><br><span class="line">        (row * <span class="keyword">self</span>.width + col) <span class="keyword">as</span> <span class="type">usize</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//获取活着的邻居的个数</span></span><br><span class="line">    <span class="comment">//相邻的步进是-1,0,1</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">live_neighbor_count</span>(&amp;<span class="keyword">self</span>, row: <span class="type">u32</span>, col: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> <span class="type">u8</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">count</span> = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">delta_row</span> <span class="keyword">in</span> [<span class="keyword">self</span>.height - <span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>].<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">cloned</span>() &#123;</span><br><span class="line">            <span class="keyword">for</span> <span class="variable">delta_col</span> <span class="keyword">in</span> [<span class="keyword">self</span>.width - <span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>].<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">cloned</span>() &#123;</span><br><span class="line">                <span class="keyword">if</span> delta_row == <span class="number">0</span> &amp;&amp; delta_col == <span class="number">0</span> &#123;</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">neighbor_row</span> = (row + delta_row) % <span class="keyword">self</span>.height;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">neighbor_col</span> = (col + delta_col) % <span class="keyword">self</span>.width;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">idx</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">get_index</span>(neighbor_row, neighbor_col);</span><br><span class="line">                count += <span class="keyword">self</span>.cells[idx] <span class="keyword">as</span> <span class="type">u8</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        count</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//下一个时间点，宇宙的变化</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">tick</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">next</span> = <span class="keyword">self</span>.cells.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">row</span> <span class="keyword">in</span> <span class="number">0</span>..<span class="keyword">self</span>.height &#123;</span><br><span class="line">            <span class="keyword">for</span> <span class="variable">col</span> <span class="keyword">in</span> <span class="number">0</span>..<span class="keyword">self</span>.width &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">idx</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">get_index</span>(row, col);</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">cell</span> = <span class="keyword">self</span>.cells[idx];</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">live_neighbors</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">live_neighbor_count</span>(row, col);</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">next_cell</span> = <span class="keyword">match</span> (cell, live_neighbors) &#123;</span><br><span class="line">                    (Cell::Alive, x) <span class="keyword">if</span> x &lt; <span class="number">2</span> =&gt; Cell::Dead,</span><br><span class="line">                    (Cell::Alive, <span class="number">2</span>) | (Cell::Alive, <span class="number">3</span>) =&gt; Cell::Alive,</span><br><span class="line">                    (Cell::Alive, x) <span class="keyword">if</span> x &gt; <span class="number">3</span> =&gt; Cell::Dead,</span><br><span class="line">                    (Cell::Dead, <span class="number">3</span>) =&gt; Cell::Alive,</span><br><span class="line">                    (otherwise, _) =&gt; otherwise,</span><br><span class="line">                &#125;;</span><br><span class="line">                next[idx] = next_cell;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">self</span>.cells = next;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> std::fmt;</span><br><span class="line"><span class="keyword">use</span> std::fmt::write;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">fmt</span>::Display <span class="keyword">for</span> <span class="title class_">Universe</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">fmt</span>(&amp;<span class="keyword">self</span>, f: &amp;<span class="keyword">mut</span> fmt::Formatter) <span class="punctuation">-&gt;</span> fmt::<span class="type">Result</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> <span class="variable">line</span> <span class="keyword">in</span> <span class="keyword">self</span>.cells.<span class="title function_ invoke__">as_slice</span>().<span class="title function_ invoke__">chunks</span>(<span class="keyword">self</span>.width <span class="keyword">as</span> <span class="type">usize</span>) &#123;</span><br><span class="line">            <span class="keyword">for</span> &amp;cell <span class="keyword">in</span> line &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">symbol</span> = <span class="keyword">if</span> cell == Cell::Dead &#123;</span><br><span class="line">                    <span class="string">&#x27;◻&#x27;</span></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="string">&#x27;◼&#x27;</span></span><br><span class="line">                &#125;;</span><br><span class="line">                <span class="built_in">write!</span>(f, <span class="string">&quot;&#123;&#125;&quot;</span>, symbol)?;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="built_in">write!</span>(f, <span class="string">&quot;\n&quot;</span>)?;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-web页面处理">2.2 web页面处理</h3>
+<p>用于调用rust的函数<br>
+index.html</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;!DOCTYPE <span class="keyword">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">&quot;utf-8&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">title</span>&gt;</span>Hello wasm-pack!<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">style</span>&gt;</span><span class="language-css"></span></span><br><span class="line"><span class="language-css">      <span class="selector-tag">body</span> &#123;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">position</span>: absolute;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">top</span>: <span class="number">0</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">left</span>: <span class="number">0</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">width</span>: <span class="number">100%</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">height</span>: <span class="number">100%</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">display</span>: flex;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">flex-direction</span>: column;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">align-items</span>: center;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">justify-content</span>: center;</span></span><br><span class="line"><span class="language-css">      &#125;</span></span><br><span class="line"><span class="language-css">    </span><span class="tag">&lt;/<span class="name">style</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">pre</span> <span class="attr">id</span>=<span class="string">&quot;game-of-life-canvas&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;./bootstrap.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>index.js</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123;<span class="title class_">Universe</span>&#125; <span class="keyword">from</span> <span class="string">&quot;wasm-game-of-life&quot;</span>;</span><br><span class="line"><span class="keyword">const</span> pre = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&quot;game-of-life-canvas&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> universe = <span class="title class_">Universe</span>.<span class="title function_">new</span>();</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">renderLoop</span>(<span class="params"></span>)&#123;</span><br><span class="line">    pre.<span class="property">textContent</span> = universe.<span class="title function_">render</span>();</span><br><span class="line">    universe.<span class="title function_">tick</span>();</span><br><span class="line">    <span class="variable language_">window</span>.<span class="title function_">requestAnimationFrame</span>(renderLoop);</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable language_">window</span>.<span class="title function_">requestAnimationFrame</span>(renderLoop);</span><br></pre></td></tr></table></figure>
+<h3 id="2-3-启动">2.3 启动</h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm run start</span><br></pre></td></tr></table></figure>
+<p>浏览器访问：<a target="_blank" rel="noopener" href="http://localhost:8080">http://localhost:8080</a>]</p>
+<h2 id="3-进一步优化">3. 进一步优化</h2>
+<p>上面实现的问题：<br>
+在Rust中实现了填充的内容，然后让wasm bindgen转换为一个有效的js字符串，这样就产生了不必要的副本。因为js代码已经知道宇宙的宽度和高度，因此可以直接读取构成cell的web assembly内存。另外我们将切换到Canvas API，而不是直接使用unicode文本。</p>
+<h3 id="3-1-rsut中将宽度-高度和数组指针返回给js">3.1 rsut中将宽度、高度和数组指针返回给js</h3>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回宽度</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">width</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">    <span class="keyword">self</span>.width</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//返回高度</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">height</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">u32</span> &#123;</span><br><span class="line">    <span class="keyword">self</span>.height</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//数组指针返回给js</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">cells</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> *<span class="keyword">const</span> Cell &#123;</span><br><span class="line">    <span class="keyword">self</span>.cells.<span class="title function_ invoke__">as_ptr</span>()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-index-html">3.2 index.html</h3>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;!DOCTYPE <span class="keyword">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">&quot;utf-8&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">title</span>&gt;</span>Hello wasm-pack!<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">style</span>&gt;</span><span class="language-css"></span></span><br><span class="line"><span class="language-css">      <span class="selector-tag">body</span> &#123;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">position</span>: absolute;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">top</span>: <span class="number">0</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">left</span>: <span class="number">0</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">width</span>: <span class="number">100%</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">height</span>: <span class="number">100%</span>;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">display</span>: flex;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">flex-direction</span>: column;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">align-items</span>: center;</span></span><br><span class="line"><span class="language-css">        <span class="attribute">justify-content</span>: center;</span></span><br><span class="line"><span class="language-css">      &#125;</span></span><br><span class="line"><span class="language-css">    </span><span class="tag">&lt;/<span class="name">style</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">canvas</span> <span class="attr">id</span>=<span class="string">&quot;game-of-life-canvas&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">canvas</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;./bootstrap.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="3-3-index-js">3.3 index.js</h3>
+<p>原先在rust中生成画面的逻辑，迁移到了js中，减少了一次数据的复制</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123;<span class="title class_">Universe</span>, <span class="title class_">Cell</span>&#125; <span class="keyword">from</span> <span class="string">&quot;wasm-game-of-life&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> &#123;memory&#125; <span class="keyword">from</span> <span class="string">&quot;wasm-game-of-life/wasm_game_of_life_bg&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">CELL_SIZE</span> = <span class="number">5</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">GRID_COLOR</span> = <span class="string">&quot;#CCCCCC&quot;</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">DEAD_COLOR</span> = <span class="string">&quot;#FFFFFF&quot;</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">ALIVE_COLOR</span> = <span class="string">&quot;#000000&quot;</span>;</span><br><span class="line"><span class="keyword">const</span> universe = <span class="title class_">Universe</span>.<span class="title function_">new</span>();</span><br><span class="line"><span class="keyword">const</span> width = universe.<span class="title function_">width</span>();</span><br><span class="line"><span class="keyword">const</span> height = universe.<span class="title function_">height</span>();</span><br><span class="line"><span class="keyword">const</span> canvas = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&quot;game-of-life-canvas&quot;</span>);</span><br><span class="line">canvas.<span class="property">height</span> = (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) * height + <span class="number">1</span>;</span><br><span class="line">canvas.<span class="property">width</span> = (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) * width + <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> ctx = canvas.<span class="title function_">getContext</span>(<span class="string">&#x27;2d&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">renderLoop</span>(<span class="params"></span>) &#123;</span><br><span class="line">    universe.<span class="title function_">tick</span>();</span><br><span class="line">    <span class="title function_">drawGrid</span>();</span><br><span class="line">    <span class="title function_">drawCells</span>();</span><br><span class="line">    <span class="variable language_">window</span>.<span class="title function_">requestAnimationFrame</span>(renderLoop);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">drawGrid</span>(<span class="params"></span>) &#123;</span><br><span class="line">    ctx.<span class="title function_">beginPath</span>();</span><br><span class="line">    ctx.<span class="property">strokeStyle</span> = <span class="variable constant_">GRID_COLOR</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Vertical lines.</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt;= width; i++) &#123;</span><br><span class="line">        ctx.<span class="title function_">moveTo</span>(i * (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) + <span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">        ctx.<span class="title function_">lineTo</span>(i * (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) + <span class="number">1</span>, (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) * height + <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Horizontal lines.</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> j = <span class="number">0</span>; j &lt;= height; j++) &#123;</span><br><span class="line">        ctx.<span class="title function_">moveTo</span>(<span class="number">0</span>, j * (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) + <span class="number">1</span>);</span><br><span class="line">        ctx.<span class="title function_">lineTo</span>((<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) * width + <span class="number">1</span>, j * (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) + <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ctx.<span class="title function_">stroke</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">getIndex</span>(<span class="params">row, column</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> row * width + column;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">drawCells</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> cellsPtr = universe.<span class="title function_">cells</span>();</span><br><span class="line">    <span class="keyword">const</span> cells = <span class="keyword">new</span> <span class="title class_">Uint8Array</span>(memory.<span class="property">buffer</span>, cellsPtr, width * height);</span><br><span class="line"></span><br><span class="line">    ctx.<span class="title function_">beginPath</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> row = <span class="number">0</span>; row &lt; height; row++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> col = <span class="number">0</span>; col &lt; width; col++) &#123;</span><br><span class="line">            <span class="keyword">const</span> idx = <span class="title function_">getIndex</span>(row, col);</span><br><span class="line"></span><br><span class="line">            ctx.<span class="property">fillStyle</span> = cells[idx] === <span class="title class_">Cell</span>.<span class="property">Dead</span></span><br><span class="line">                ? <span class="variable constant_">DEAD_COLOR</span></span><br><span class="line">                : <span class="variable constant_">ALIVE_COLOR</span>;</span><br><span class="line"></span><br><span class="line">            ctx.<span class="title function_">fillRect</span>(</span><br><span class="line">                col * (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) + <span class="number">1</span>,</span><br><span class="line">                row * (<span class="variable constant_">CELL_SIZE</span> + <span class="number">1</span>) + <span class="number">1</span>,</span><br><span class="line">                <span class="variable constant_">CELL_SIZE</span>,</span><br><span class="line">                <span class="variable constant_">CELL_SIZE</span></span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ctx.<span class="title function_">stroke</span>();</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable language_">window</span>.<span class="title function_">requestAnimationFrame</span>(renderLoop);</span><br></pre></td></tr></table></figure>
+<h2 id="4-测试">4. 测试</h2>
+<p>需要先在rust中设置一些方法，用于测试调用：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Universe的wasm中实现方法：</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">set_width</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>,width:<span class="type">u32</span>)&#123;</span><br><span class="line">   <span class="keyword">self</span>.width = width;</span><br><span class="line">   <span class="keyword">self</span>.cells = (<span class="number">0</span>..width*<span class="keyword">self</span>.height).<span class="title function_ invoke__">map</span>(|_i| Cell::Dead).<span class="title function_ invoke__">collect</span>();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">set_height</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>,height:<span class="type">u32</span>)&#123;</span><br><span class="line">   <span class="keyword">self</span>.height = height;</span><br><span class="line">   <span class="keyword">self</span>.cells = (<span class="number">0</span>..height*<span class="keyword">self</span>.width).<span class="title function_ invoke__">map</span>(|_i| Cell::Dead).<span class="title function_ invoke__">collect</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">非wasm实现方法</span><br><span class="line"><span class="comment">//没有#[wasm_bindgen]</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Universe</span>&#123;</span><br><span class="line">   <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">get_cells</span>(&amp;<span class="keyword">self</span>)<span class="punctuation">-&gt;</span>&amp;[Cell]&#123;</span><br><span class="line">      &amp;<span class="keyword">self</span>.cells</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">set_cells</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>,cells:&amp;[(<span class="type">u32</span>,<span class="type">u32</span>)])&#123;</span><br><span class="line">      <span class="keyword">for</span> (row,col) <span class="keyword">in</span> cells.<span class="title function_ invoke__">iter</span>().<span class="title function_ invoke__">cloned</span>()&#123;</span><br><span class="line">         <span class="keyword">let</span> <span class="variable">idx</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">get_index</span>(row,col);</span><br><span class="line">         <span class="keyword">self</span>.cells[idx] = Cell::Alive;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在tests中的web.rs中：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//! Test suite for the Web and headless browsers.</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#![cfg(target_arch = <span class="string">&quot;wasm32&quot;</span>)]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">crate</span> wasm_bindgen_test;</span><br><span class="line"><span class="keyword">use</span> wasm_bindgen_test::*;</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">crate</span> wasm_game_of_life;</span><br><span class="line"><span class="keyword">use</span> wasm_game_of_life::Universe;</span><br><span class="line"></span><br><span class="line">wasm_bindgen_test_configure!(run_in_browser);</span><br><span class="line"></span><br><span class="line"><span class="meta">#[cfg(test)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">input_spaceship</span>() <span class="punctuation">-&gt;</span> Universe &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">universe</span> = Universe::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    universe.<span class="title function_ invoke__">set_width</span>(<span class="number">6</span>);</span><br><span class="line">    universe.<span class="title function_ invoke__">set_height</span>(<span class="number">6</span>);</span><br><span class="line">    universe.<span class="title function_ invoke__">set_cells</span>(&amp;[(<span class="number">1</span>, <span class="number">2</span>), (<span class="number">2</span>, <span class="number">3</span>), (<span class="number">3</span>, <span class="number">1</span>), (<span class="number">3</span>, <span class="number">2</span>), (<span class="number">3</span>, <span class="number">3</span>)]);</span><br><span class="line">    universe</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[cfg(test)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">excepted_spaceship</span>() <span class="punctuation">-&gt;</span> Universe &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">universe</span> = Universe::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    universe.<span class="title function_ invoke__">set_width</span>(<span class="number">6</span>);</span><br><span class="line">    universe.<span class="title function_ invoke__">set_height</span>(<span class="number">6</span>);</span><br><span class="line">    universe.<span class="title function_ invoke__">set_cells</span>(&amp;[(<span class="number">2</span>, <span class="number">1</span>), (<span class="number">2</span>, <span class="number">3</span>), (<span class="number">3</span>, <span class="number">2</span>), (<span class="number">3</span>, <span class="number">3</span>), (<span class="number">4</span>, <span class="number">2</span>)]);</span><br><span class="line">    universe</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[wasm_bindgen_test]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">test_tick</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">input_universe</span> = <span class="title function_ invoke__">input_spaceship</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">excepted_universe</span> = <span class="title function_ invoke__">excepted_spaceship</span>();</span><br><span class="line">    input_universe.<span class="title function_ invoke__">tick</span>();</span><br><span class="line">    <span class="built_in">assert_eq!</span>(&amp;input_universe.<span class="title function_ invoke__">get_cells</span>(), &amp;excepted_universe.<span class="title function_ invoke__">get_cells</span>());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行测试：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wasm-pack test --firefox --headless</span><br></pre></td></tr></table></figure>
+<h2 id="5-调试代码">5. 调试代码</h2>
+<p>要在浏览器控制台打印日志，需要：<br>
+wasm-pack-template附带了一个可选的，默认情况下启用的依赖，该依赖属于console_error_panic_hook包，在wasm-game-of-life/src/utils中配置，需要在初始化函数活着公共代码路径中安装钩子，在本项目中，可以如下调用：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span>Universe&#123;</span><br><span class="line">   utils::<span class="title function_ invoke__">set_panic_hook</span>();</span><br><span class="line">   <span class="comment">//....</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Cargo.toml依赖：</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">web-sys</span> = &#123;version=<span class="string">&quot;0.3&quot;</span>,features=[<span class="string">&quot;console&quot;</span>]&#125;</span><br></pre></td></tr></table></figure>
+<p>日志宏：<br>
+<a target="_blank" rel="noopener" href="http://lib.rs">lib.rs</a> :</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="keyword">crate</span> web_sys;</span><br><span class="line"><span class="built_in">macro_rules!</span> log &#123;</span><br><span class="line">    ($($t:tt)*)=&gt;&#123;</span><br><span class="line">        web_sys::console::<span class="title function_ invoke__">log_1</span>(&amp;<span class="built_in">format!</span>($($t)*).<span class="title function_ invoke__">into</span>())</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>rust中设置需要打印的内容：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//变化前打印情况</span></span><br><span class="line"> log!(</span><br><span class="line">     <span class="string">&quot;cell [&#123;&#125;,&#123;&#125;] is initally &#123;:?&#125; and has &#123;&#125; live neighbors&quot;</span>,</span><br><span class="line">     row,</span><br><span class="line">     col,</span><br><span class="line">     cell,</span><br><span class="line">     live_neighbors</span><br><span class="line"> );</span><br></pre></td></tr></table></figure>
+<p>index.js中开启debug：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">renderLoop</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">debugger</span>;<span class="comment">//添加调试</span></span><br><span class="line">    universe.<span class="title function_">tick</span>();</span><br><span class="line">    <span class="title function_">drawGrid</span>();</span><br><span class="line">    <span class="title function_">drawCells</span>();</span><br><span class="line">    <span class="variable language_">window</span>.<span class="title function_">requestAnimationFrame</span>(renderLoop);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>启动后，即可在浏览器控制台看到打印的信息</p>
+<h2 id="总结">总结</h2>
+<p>本文已编辑完毕</p>
+<h2 id="参考">参考</h2>
+<p>[1] <a target="_blank" rel="noopener" href="https://rustwasm.github.io/docs/book/">Wasm官方文档</a></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/76ce031b/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/WebAssembly/" rel="tag">WebAssembly</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/rust%E5%9F%BA%E7%A1%80/" rel="tag">rust基础</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/57d3ce21/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            WebAssembly(3)-康威生命游戏案例-交互
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/bc9ee434/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">WebAssembly(1)-入门</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

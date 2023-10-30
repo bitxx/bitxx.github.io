@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>substrate基础(3)-基础概念和原理 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/substrate/基础/substrate基础(3)-基础概念和原理"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  substrate基础(3)-基础概念和原理
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/2cac7d84/" class="article-date">
+  <time datetime="2022-07-01T01:32:26.000Z" itemprop="datePublished">2022-07-01</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/">Substrate</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/%E5%9F%BA%E7%A1%80/">基础</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">3.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">12 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>涉及到substrate的概念和基础原理</p>
+<span id="more"></span>
+<h2 id="1-概述">1. 概述</h2>
+<ol>
+<li>substrate主要分为两层结构：
+<ol>
+<li>外部节点(outer node)：用于处理网络活动，例如对等发现、管理事务请求、与对等方达成共识以及响应 RPC 调用。主要由以下部分内容组成：
+<ol>
+<li>存储：键值存储层来持久化状态演变</li>
+<li>p2p网络：使用了rust实现的<a target="_blank" rel="noopener" href="https://libp2p.io/">libp2p network stack</a></li>
+<li>共识：用于达成一致</li>
+<li>远程过程调用RPC API：交互</li>
+<li>监测：方便运维检测节点指标，比如<a target="_blank" rel="noopener" href="https://prometheus.io/">普罗米修斯系统</a></li>
+<li>执行环境：选择<code>WebAssembly</code>或<code>Rust</code>环境，然后将任务派发给<code>运行时(runtime)</code>，比如执行合约。</li>
+</ol>
+</li>
+<li>运行时(Runtime)：包含用于执行区块链的状态转换函数的所有业务逻辑，</li>
+</ol>
+</li>
+</ol>
+<h2 id="2-运行时-runtime-开发">2. 运行时(Runtime)开发</h2>
+<ol>
+<li>运行时包含用于执行事务、保存状态转换以及与外部节点交互的所有业务逻辑。</li>
+<li>Substrate的核心主要就是根据自己的业务开发运行时</li>
+<li>Runtime通过Api与外部节点进行通信</li>
+<li>可以灵活自定义接口<code>sp_api</code> <a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_api/macro.impl_runtime_apis.html">impl_runtime_apis</a> 每个自定义的Runtime都必须实现<code>Core</code>和<code>Metadata</code>接口，当然，大多数的Runtime都实现了如下几个接口，可以作为参考：
+<ol>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_block_builder/trait.BlockBuilder.html">BlockBuilder</a> 以获取构建块所需的功能。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_transaction_pool/runtime_api/trait.TaggedTransactionQueue.html">TaggedTransactionQueue</a> 用于验证交易。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_offchain/trait.OffchainWorkerApi.html">OffchainWorkerApi</a> 用于启用链下操作。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_consensus_aura/trait.AuraApi.html">AuraApi</a> 用于使用共识的轮循机制方法进行块创作和验证。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_session/trait.SessionKeys.html">SessionKeys</a> 用于生成和解码会话密钥。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/sp_finality_grandpa/trait.GrandpaApi.html">GrandpaApi</a> 用于将块最终确定为运行时。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_system_rpc_runtime_api/trait.AccountNonceApi.html">AccountNonceApi</a> 用于查询交易索引。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/pallet_transaction_payment_rpc_runtime_api/trait.TransactionPaymentApi.html">TransactionPaymentApi</a> 用于查询有关事务的信息。</li>
+<li><a target="_blank" rel="noopener" href="https://paritytech.github.io/substrate/master/frame_benchmarking/trait.Benchmark.html">Benchmark</a> 用于估计和测量完成事务所需的执行时间。</li>
+</ol>
+</li>
+<li>必须实现的核心基础（数据类型等）：
+<ol>
+<li>Hash：对某些数据的加密摘要进行编码的类型。通常只有 256 位数量。</li>
+<li>DigestItem：一种类型，必须能够编码与共识和更改跟踪相关的许多“硬连线”替代方案之一，以及与运行时内的特定模块相关的任意数量的“软编码”变体。</li>
+<li>Digest：一系列文摘项目。这将对与轻量级客户端相关的所有信息进行编码，以便在块中拥有这些信息。</li>
+<li>Extrinsic：一种类型，表示区块链外部由区块链识别的单个数据。这通常涉及一个或多个签名，以及某种编码指令（例如，用于转移资金所有权或调用智能合约）。</li>
+<li>Header：一种代表（加密或其他方式）与块相关的所有信息的类型。它包括父哈希，存储根和外在三根，摘要和块号。</li>
+<li>Block：本质上只是一系列s的组合，以及要使用的哈希算法的规范。HeaderExtrinsic</li>
+<li>BlockNumber：一种类型，用于对任何有效块具有的祖先总数进行编码。通常为 32 位数量。</li>
+</ol>
+</li>
+<li>Frame(Framework for Runtime Aggregation of Modularized Entities的缩写)，各种不同的库，方便定制化开发
+<ol>
+<li>官方在frame中预定义了大量的<code>pallet</code>，你也可以自定义</li>
+<li>大多数pallet由以下部分组成：
+<ol>
+<li>导入和依赖项</li>
+<li>pallet类型声明</li>
+<li>运行时配置特征</li>
+<li>运行时存储</li>
+<li>运行时事件</li>
+<li>应在特定上下文中执行的逻辑的挂钩</li>
+<li>可用于执行事务的函数调用</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="3-共识">3. 共识</h2>
+<ol>
+<li>默认提供了一些常见的共识机制</li>
+<li>Substrate的共识分为两个独立阶段：
+<ol>
+<li>Block authoring：生成一个新的块</li>
+<li>Block finalization：用于控制分叉和选择规范链的过程</li>
+</ol>
+</li>
+<li>Substrate默认提供Aura来进行<code>Block authoring(块创建)</code>，<code>GRANDPA</code>来进行<code>finalization(块确认)</code></li>
+</ol>
+<h3 id="3-1-block-authoring">3.1 Block authoring</h3>
+<p>目前Substrate提供了三种用于块创建的共识，具体这三种的工作原理这里就不解释了，需要自行去查找资料：</p>
+<ol>
+<li>Authority-based round-robin scheduling (Aura)</li>
+<li>Blind assignment of blockchain extension (BABE) slot-based scheduling.</li>
+<li>Proof of work computation-based scheduling.</li>
+</ol>
+<h3 id="3-2-finalization-and-forks">3.2 Finalization and forks</h3>
+<p>主要是针对分叉的处理，Substrate提供了机制来处理。比如：</p>
+<ol>
+<li><code>GRANDPA</code>协议，最长链规则来确定哪条是合法的链</li>
+<li><code>GHOST</code>协议，构建的块最多的分支来解决的</li>
+</ol>
+<h3 id="3-3-deterministic-finality">3.3 deterministic finality</h3>
+<p>就是一笔交易何时给出结果。这个需要结合共识来考虑</p>
+<h3 id="3-4-默认共识">3.4 默认共识</h3>
+<p>Substrate默认提供<code>Aura</code>来进行<code>Block authoring(块创建)</code>，<code>GRANDPA</code>来进行<code>finalization(块确认)</code></p>
+<h4 id="3-4-1-aura">3.4.1 Aura</h4>
+<p>提供的基于插槽的块生成机制，由权威机构轮流生成块</p>
+<h4 id="3-4-2-babe">3.4.2 BABE</h4>
+<p>BABE使用一组已知的验证器提供基于插槽的块创作，并且通常用于权益证明区块链。与Aura不同，插槽分配基于可验证随机函数（VRF）的评估。为每个验证器分配一个epoch的权重。该epoch被分解为多个槽，验证器在每个槽评估其VRF。对于验证器的VRF输出低于其权重的每个插槽，允许编写一个块。<br>
+因为多个验证器可能能够在同一个插槽中生成一个块，所以即使在良好的网络条件下，分叉在BABE中也比在Aura中更常见<br>
+Subscriber的BABE实现还有一个回退机制，用于在给定的插槽中没有选择权限。这些辅助插槽分配允许BABE实现恒定的块时间。<br>
+可前往此处进一步了解<a target="_blank" rel="noopener" href="https://research.web3.foundation/en/latest/polkadot/block-production/Babe.html">BABE算法</a></p>
+<h4 id="3-4-3-pow">3.4.3 POW</h4>
+<p>烂大街了，这个就不讲了</p>
+<h4 id="3-4-4-grandpa-爷爷">3.4.4 GRANDPA(爷爷)</h4>
+<p>GRANDPA不会创建块，只是根据创建块的信息进行投票，三分之二投票后，最终决定哪个块合适。最长链规则来决定最终合法的链。<br>
+可前往此处进一步了解<a target="_blank" rel="noopener" href="https://research.web3.foundation/en/latest/polkadot/finality.html">GRANDPA(爷爷)算法</a></p>
+<h2 id="4-交易">4. 交易</h2>
+<p>分为3类：<br>
+已签名的交易、未签名事务、固有事务</p>
+<h3 id="4-1-已签名交易">4.1 已签名交易</h3>
+<p>很常见的，比如转账，转账前总得有自己的密钥签名才能执行。执行期间，通常也需要手续费</p>
+<h3 id="4-2-未签名交易">4.2 未签名交易</h3>
+<p>顾名思义不用签名的交易操作。只能由验证器节点来调用</p>
+<h3 id="4-3-固有事务">4.3 固有事务</h3>
+<p>只能由创建块的节点将信息插入到块中，不会对外广播。比如某节点将时间戳插入块中，不管准确不准确，反正插入了。该块能不能被别的节点接受，这就是验证器的事了。</p>
+<h3 id="4-4-交易生命周期">4.4 交易生命周期</h3>
+<ol>
+<li>汇总生命周期：
+<ol>
+<li>本地节点侦听网络上的事务。</li>
+<li>每笔交易都经过验证。</li>
+<li>有效的事务将放在事务池中。</li>
+<li>事务池对相应事务队列中的有效事务进行排序，执行模块调用运行时以开始下一个区块。</li>
+<li>执行事务并将状态更改存储在本地内存中。</li>
+<li>构造的块将发布到网络。</li>
+</ol>
+</li>
+<li>验证和排队交易
+<ol>
+<li>验证事务池中的事务 （交易池仅处理交易的有效性以及交易队列中放置的有效交易的排序。）
+<ol>
+<li>事务索引（也称为事务随机数）是否正确？</li>
+<li>用于签署交易的账户是否有足够的资金来支付相关费用？</li>
+<li>用于签署交易的签名是否有效？</li>
+</ol>
+</li>
+<li>将有效事务添加到事务队列
+<ol>
+<li>就绪队列  挂起</li>
+<li>未来队列  等待</li>
+</ol>
+</li>
+<li>无效的事务处理
+<ol>
+<li>事务已包含在块中，因此将从验证队列中删除。</li>
+<li>交易的签名无效，因此会立即被拒绝。</li>
+<li>交易太大而无法放入当前区块，因此将其放回队列中以进行新的验证轮次。</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>按优先级排序的交易
+<ol>
+<li>如果存在一个未签名的事务和另一个已签名的事务，则将未签名的事务放在队列中的第一个。</li>
+<li>如果有两笔来自不同发送方的交易，则确定哪笔交易更重要，应首先包含在区块中。</li>
+<li>如果有两笔来自同一发送方的交易具有相同的：区块中只能包含一笔交易，因此队列中仅包含费用较高的交易</li>
+</ol>
+</li>
+<li>执行事务和生成区块
+<ol>
+<li>初始化块</li>
+<li>执行事务
+<ol>
+<li>在区块初始化后，每个有效的交易都按交易优先级的顺序执行。请务必记住，在执行之前不会缓存状态。相反，状态更改在执行期间直接写入存储。如果事务在执行过程中失败，则在失败之前发生的任何状态更改都不会恢复，从而使块处于不可恢复状态。在将任何状态更改提交到存储之前，运行时逻辑应执行所有必要的检查，以确保外部操作成功。</li>
+<li>请注意，事件也写入存储。因此，运行时逻辑在执行补充操作之前不应发出事件。如果事务在发出事件后失败，则不会还原该事件。</li>
+</ol>
+</li>
+<li>完成块</li>
+</ol>
+</li>
+</ol>
+<h2 id="5-状态转换和存储">5. 状态转换和存储</h2>
+<ol>
+<li>Substrate使用<code>RocksDB</code>实现其存储。这是一种用于快速存储环境的持久键值存储。它还支持实验奇偶校验数据库.</li>
+<li>Trie abstraction
+<ol>
+<li>使用了改良后的默克尔树，直接访问trie成本很高，一般都是会进行键值缓存</li>
+<li>State trie(状态树)
+<ol>
+<li>树根的hash值放在每个块头部，可以方便验证链状态，并且很容易应用于轻量级客户端</li>
+<li>该状态树值存放规范的内容，不存储分叉数据，单独的一个状态数据库来维护它。</li>
+</ol>
+</li>
+<li>Child trie（子树）
+<ol>
+<li>状态树的节点？</li>
+<li>这个没看明白，以后看懂了再说</li>
+<li>主要是方便开发人员自己定义trie？</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>存储查询
+<ol>
+<li>使用TwoX 128 hash来存储数据</li>
+<li>查询的多级key，是合并各级的key的hash来查询的，如下：</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">twox_128(&quot;Balances&quot;)                                             = &quot;0xc2261276cc9d1f8598ea4b6a74b15c2f&quot;</span><br><span class="line">twox_128(&quot;FreeBalance&quot;)                                          = &quot;0x6482b9ade7bc6657aaca787ba1add3b4&quot;</span><br><span class="line">scale_encode(&quot;5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY&quot;) = &quot;0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d&quot;</span><br><span class="line"></span><br><span class="line">blake2_128_concat(&quot;0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d&quot;) = &quot;0xde1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d&quot;</span><br><span class="line"></span><br><span class="line">state_getStorage(&quot;0xc2261276cc9d1f8598ea4b6a74b15c2f6482b9ade7bc6657aaca787ba1add3b4de1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d&quot;) = &quot;0x0000a0dec5adc9353600000000000000&quot;</span><br></pre></td></tr></table></figure>
+<h2 id="6-帐户-地址和密钥">6. 帐户、地址和密钥</h2>
+<ol>
+<li>公钥和私钥<br>
+没啥好说的。其中公钥可以根据不同的平行链，生成对应格式的地址。也就是说，一个公钥可以派生出不同的地址，方便跟不同的链交互</li>
+<li>地址编码和链特定地址
+<ol>
+<li>默认substrate使用SS58 address format格式，基于 base-58 encoding编码</li>
+<li>base-58编码优点：
+<ol>
+<li>编码的地址由 58 个字母数字字符组成。</li>
+<li>字母数字字符串省略了在字符串中难以区分的字符</li>
+<li>网络信息（例如，特定于网络的前缀）可以在地址中进行编码</li>
+<li>可以使用校验和检测输入错误，以确保正确输入地址。</li>
+<li>可以注册一个特定的前缀</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>frame中的帐户信息
+<ol>
+<li>从概念上讲，帐户表示具有公钥/私钥对和一个或多个公共地址的标识。但是，在使用 FRAME 构建的运行时中，帐户被定义为具有 32 字节地址标识符和相应帐户信息（如帐户已进行的事务数、依赖于帐户的模块数以及帐户余额）的存储映射。</li>
+<li>帐户属性（如 ）可以在模块中一般定义。然后，在运行时实现中将泛型类型解析为特定类型，并最终分配特定值。</li>
+</ol>
+</li>
+<li>专业账户
+<ol>
+<li>虽然大多数账户用于表示控制资金或执行交易的公钥/私钥对，但Substrate支持一些专用账户来控制如何使用特定的密钥对。例如，你可能拥有需要自定义加密方案、只能用于执行特定功能或只能访问特定plate的帐户。</li>
+<li>质押账户和密钥
+<ol>
+<li>在大多数情况下，专用帐户是在特定 FRAME plate的上下文中实现的。例如，提名权益证明（NPoS）可能要求节点验证者和提名者持有大量代币。为确保这些账户中的余额安全，质押托盘提供了一些账户抽象，用于分离执行特定操作所需的密钥对。</li>
+</ol>
+</li>
+<li>账户区分：
+<ol>
+<li>存储帐户
+<ol>
+<li>可以理解为用于质押的账户</li>
+</ol>
+</li>
+<li>控制器帐户
+<ol>
+<li>理解为控制质押池的账户</li>
+</ol>
+</li>
+<li>会话帐户
+<ol>
+<li>管理池子的gas消耗等行为的账户</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>无密钥代理账户
+<ol>
+<li>没理解，我认为是一个替身账户</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="7-rust-for-substrate">7. Rust for Substrate</h2>
+<ol>
+<li>对于编写外部节点(客户端)的开发人员，技术要求复杂：需要掌握异步框架<a target="_blank" rel="noopener" href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">Asynchronous Rust</a></li>
+<li>对于编写运行时的开发人员，专注业务，技术要求普通：<a target="_blank" rel="noopener" href="https://rust-unofficial.github.io/patterns/idioms/index.html">Rust idioms</a> <a target="_blank" rel="noopener" href="https://docs.rust-embedded.org/book/intro/no-std.html">working with no_std</a>以及<code>宏</code></li>
+<li>需要编译为：Wasm。也就是说，某些典型的标准库不能用，需要用专门定制的库来编译，如：asm32-unknown-unknown no_std</li>
+<li>宏
+<ol>
+<li>substrate使用了大量的宏，因此开发人员一定要了解宏的使用</li>
+<li>substrate中的宏涉及到两类：<code>派生属性</code>和<code>自定义属性</code></li>
+</ol>
+</li>
+<li>泛型和配置特性</li>
+</ol>
+<h2 id="8-链下操作">8. 链下操作</h2>
+<ol>
+<li>Substrate提供了链下操作的机制，调用相应的独立模块，如查询或者进一步处理链上数据：
+<ol>
+<li>链下工作线程（OCW）</li>
+<li>链外存储</li>
+<li>链外索引</li>
+</ol>
+</li>
+<li>链下worker，需要实施相应验证机制来约束
+<ol>
+<li>能够提交交易（有符号或无符号）到链以发布计算结果。</li>
+<li>一个功能齐全的 HTTP 客户端，允许工作线程访问和从外部服务获取数据。</li>
+<li>访问本地密钥库以对语句或事务进行签名和验证。</li>
+<li>另外一个本地键值数据库在所有链下工作者之间共享。</li>
+<li>用于随机数生成的安全局部熵源。</li>
+<li>访问节点的精确度当地时间.</li>
+<li>睡眠和恢复工作的能力。</li>
+</ol>
+</li>
+<li>链下存储</li>
+<li>链下索引</li>
+</ol>
+<h2 id="总结">总结</h2>
+<p>本文编辑完毕</p>
+<h2 id="参考">参考</h2>
+<p>[1] <a target="_blank" rel="noopener" href="https://docs.substrate.io/quick-start/">Substrate官方文档</a></p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/2cac7d84/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Substrate/" rel="tag">Substrate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/d13fa01d/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            substrate基础(4)-模拟构建两个节点的网络
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/8aab1b7b/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">substrate基础(2)-polkadot apps远端访问配置</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

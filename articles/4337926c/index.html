@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>solidity教程(1)-基础和进阶 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/ethereum/solidity/solidity教程(1)-基础和进阶"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  solidity教程(1)-基础和进阶
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/4337926c/" class="article-date">
+  <time datetime="2022-12-08T01:05:19.000Z" itemprop="datePublished">2022-12-08</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/%E4%BB%A5%E5%A4%AA%E5%9D%8A/">以太坊</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/%E4%BB%A5%E5%A4%AA%E5%9D%8A/solidity/">solidity</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">4.2k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">20 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>solidity教程-基础和进阶，基于<code>8.0</code>版本</p>
+<span id="more"></span>
+<h2 id="1-概述">1. 概述</h2>
+<p><a target="_blank" rel="noopener" href="https://remix.ethereum.org">在线合约编辑器Remix</a></p>
+<h3 id="1-1-区块链上问题">1.1 区块链上问题</h3>
+<ol>
+<li>产生随机数：
+<ol>
+<li>通常是拿来做抽奖用途，但在区块链上，如果要大家都能达成公式，就代表每个节点都要能够做出完全一致的随机数</li>
+<li>于是要如何设计出<code>有特定产生模式+异地完全一致+不能被预测到</code>的随机数就是个大问题</li>
+</ol>
+</li>
+<li>数据存储
+<ol>
+<li>存储在区块链上的数据，需要能让每个节点都验证到，因此至少专门存储数据的节点会需要把这些数据永久的记录下来</li>
+<li>运行节点的人很难有无限的硬盘，把大量的数据都存储下来</li>
+<li>存储成本直接转嫁给使用者，导致数据存储会很贵</li>
+</ol>
+</li>
+</ol>
+<h3 id="1-2-合约结构">1.2 合约结构</h3>
+<img src="/articles/4337926c/1.png" class="" title="合约结构">
+<p>关键字：pragma<br>
+用来声明编译指示，通常为开发编译器选项使用，如：</p>
+<ol>
+<li>版本声明：pragma solidity ^0.8.17   //^表示大于等于（但不得大于等于0.9.0），也可以用 = 限制固定版本</li>
+<li>ABI编解码版本声明(ABI CoderPragma)
+<ol>
+<li>pragma abicoder v2;</li>
+<li>平常不会特别声明</li>
+</ol>
+</li>
+<li>实验性编译指示(Experimental Pragma):
+<ol>
+<li>pragma experimental ABIEncoderV2;
+<ol>
+<li>V2版本的ABI编解码器</li>
+<li>在0.7.4后被正式使用： pragma abicoder v2</li>
+</ol>
+</li>
+<li>pragma experimental SMTChecker;
+<ol>
+<li>格式检查</li>
+<li>能通过分析找出更多关于安全性的警告<br>
+最基本的一个合约：</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.17;</span><br><span class="line">contract ContractName &#123;&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="1-3-版权声明">1.3 版权声明</h3>
+<ol>
+<li>Solidity在0.6.8版加入了版权声明的警告机制，编译器会警告开发者</li>
+<li>SPDX全名：The Software Package Data Exchange</li>
+<li>根据自己的需要选择版权，去这里查找：<a target="_blank" rel="noopener" href="https://spdx.org/licenses">版权列表</a></li>
+<li>使用方式类似如此：<code>// SPDX-License-Identifier: MIT</code></li>
+</ol>
+<h3 id="1-4-helloworld">1.4 helloworld</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity 0.8.7;</span><br><span class="line">contract HelloWorld &#123;</span><br><span class="line">   string public myString = &quot;hello world&quot;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="2-基础">2. 基础</h2>
+<h3 id="2-1-类型和值">2.1 类型和值</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract ValueTypes&#123;</span><br><span class="line">    bool public b = true;</span><br><span class="line"></span><br><span class="line">    // uint正整数，默认uint256 0 to 2**256 - 1</span><br><span class="line">    // uint8 0 to 2**8 - 1</span><br><span class="line">    // uint16 0 to 2**16 -1</span><br><span class="line">    uint public u = 123; </span><br><span class="line"></span><br><span class="line">    // int，有符号，默认int256 -2**255 to 2**255 - 1</span><br><span class="line">    // uint128 -2**127 to 2**127 - 1</span><br><span class="line">    int public i = -123; </span><br><span class="line">    int public minInt = type(int).min;</span><br><span class="line">    int public maxInt = type(int).max;</span><br><span class="line"></span><br><span class="line">    //地址：16进制数字 </span><br><span class="line">    address public addr = &quot;0xE5e69B292170459a4e4CC77f94491681fF1f1636&quot;</span><br><span class="line"></span><br><span class="line">    //32位 64个16进制</span><br><span class="line">    bytes32 public b32 = &quot;0xf83bf40815929b2448b230d51fa2eaa5b8ccffd87691db7e62bf817b2cbb56ad&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-函数简介-可见范围">2.2 函数简介&amp;可见范围</h3>
+<p>可见范围-external：表示外部函数，只能暴露给外部调用<br>
+可见范围-public：可以外部调用，也可以合约内部调用<br>
+可见范围-private：只在合约内部可见<br>
+可见范围-internal：合约内部以及被继承的子合约可见</p>
+<p>pure：这个函数不对链上有任何读写操作，也就是只能有局部变量（方法执行完毕，会被释放）<br>
+view：不可链上写入数据，可以读取链上变量<br>
+immutable: 合约发布时，仅可赋值一次(可在构造函数中赋值，也可全局赋值)，之后就不可变更，可节省gas</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract FunctionIntro&#123;</span><br><span class="line"></span><br><span class="line">   //读取全局变量</span><br><span class="line">   function globalVars() external view reutrns(address,uint,uint)&#123;</span><br><span class="line">      address sender = msg.sender;</span><br><span class="line">      uint timestamp =  block.timestamp;</span><br><span class="line">      uint blockNum = block.number;</span><br><span class="line">      return (sender,timestamp,blockNum);</span><br><span class="line">   &#125;</span><br><span class="line">     </span><br><span class="line">   function add(uint x,uint y) external pure returns (uint)&#123;</span><br><span class="line">      return x + y;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   function sub(uint x,uint y) external pure returns (uint)&#123;</span><br><span class="line">      return x - y;</span><br><span class="line">   &#125;</span><br><span class="line">   </span><br><span class="line">   //函数返回</span><br><span class="line">   function returnMany1() public pure returns (uint,bool)&#123;</span><br><span class="line">      return (1,true);</span><br><span class="line">   &#125;</span><br><span class="line">   function returnMany2() public pure returns (uint x,bool b)&#123;</span><br><span class="line">      return (1,true);</span><br><span class="line">   &#125;</span><br><span class="line">   function returnMany3() public pure returns (uint x,bool b)&#123;</span><br><span class="line">      x = 1;</span><br><span class="line">      b = true;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   //函数调用返回值，若不需要某返回值，则直接逗号，节省gas</span><br><span class="line">   function destructingAssigments() public pure&#123;</span><br><span class="line">      (uint x, bool b) = returnMany1();</span><br><span class="line">      (, bool b2) = returnMany2();</span><br><span class="line"></span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-3-状态变量-局部变量-常量-不可变量及默认值">2.3 状态变量、局部变量、常量、不可变量及默认值</h3>
+<p><code>写入函数读取常量或状态变量时，需要消耗gas</code>；定义为常量，可以减少gas消耗。<br>
+bool默认：false<br>
+uint、int默认：0<br>
+address默认：0x0000000000000000000000000000000000000000   40个0<br>
+bytes32默认：0x0000000000000000000000000000000000000000000000000000000000000000 64个0</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract StateVariables&#123;</span><br><span class="line">    //链上记录变量，状态变量</span><br><span class="line">    uint public i;</span><br><span class="line">    bool public b;</span><br><span class="line">    address public myAddress;</span><br><span class="line">   </span><br><span class="line">   //常量</span><br><span class="line">   address public immutable owner = msg.sender;  //immutable 仅合约发布时可赋值一次</span><br><span class="line">   address public constant MY_ADDRESS=&quot;0xE5e69B292170459a4e4CC77f94491681fF1f1636&quot;;</span><br><span class="line">   uint public constant MY_UINT=123;</span><br><span class="line"></span><br><span class="line">    function foo() external&#123;</span><br><span class="line">       //局部变量</span><br><span class="line">       // 虚拟机内存，方法执行完，会被释放</span><br><span class="line">       uint x = 123;</span><br><span class="line">       bool f = false;</span><br><span class="line">       x += 456;</span><br><span class="line">       f = true;</span><br><span class="line"></span><br><span class="line">       // 链上，会改变链的状态</span><br><span class="line">       i = 123;</span><br><span class="line">       b = true;</span><br><span class="line">       myAddress = address(1);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-4-结构-循环-报错控制">2.4 结构、循环、报错控制</h3>
+<ol>
+<li>if else语法和别的语言一样，包括三元运算符</li>
+<li>for while语法和别的语言一样，类似java，</li>
+<li>报错控制：require、revert、assert
+<ol>
+<li>如果没有写入错误返回信息，如果表达式失败，则会全部退还gas</li>
+<li>如果一定要返回错误信息，可以用自定义报错，就是自定义方法报错(v8.0特性)</li>
+<li>区别：
+<ol>
+<li>require对比Revert，复杂时候用revert(如for、if语句中)，一般用require(方法开头)，两者一样都会向剩余的gas费返还给调用者</li>
+<li>assert()语句的失败报错，会烧掉所有的gas，尽量少用。意味着发生了代码层面的错误事件，很大可能是合约中有一个bug需要修复。</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract Err&#123;</span><br><span class="line">    function testRequire(uint _i) public pure&#123;</span><br><span class="line">        require(_i&lt;=10,&quot;i&gt;10&quot;);  //有表达式，表达式为真才能运行后续代码</span><br><span class="line">        //other code</span><br><span class="line">    &#125;</span><br><span class="line">    function testRevert(uint _i) public pure&#123;</span><br><span class="line">        if(i&gt;10)&#123;</span><br><span class="line">            revert(&quot;i&gt;10&quot;); //没有表达式</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    uint public num = 123;</span><br><span class="line">    function testAssert(uint _i) public pure&#123;</span><br><span class="line">        assert(num = 123); //断言，不包含报错信息，只会抛出异常</span><br><span class="line">    &#125;      </span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-5-函数修改器modifier">2.5 函数修改器modifier</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract Err&#123;</span><br><span class="line">    bool public paused;</span><br><span class="line">    uint public count;</span><br><span class="line"></span><br><span class="line">    function setPause(bool _paused) external&#123;</span><br><span class="line">        paused = _paused;</span><br><span class="line">    &#125;</span><br><span class="line">    modifier whenNotPaused()&#123;</span><br><span class="line">        require(!paused,&quot;paused&quot;);</span><br><span class="line">        _; //类似占位符，使用该修改器的方法的代码被调用的位置</span><br><span class="line">    &#125;</span><br><span class="line">    function inc() external whenNotPaused&#123;</span><br><span class="line">        count +=1;</span><br><span class="line">    &#125;</span><br><span class="line">    function dec() external whenNotPaused&#123;</span><br><span class="line">        count -=1;</span><br><span class="line">    &#125;</span><br><span class="line">   </span><br><span class="line">    //带有参数的修改器</span><br><span class="line">    modifier cap(uint _x)&#123;</span><br><span class="line">        require(_x &lt;100,&quot;x&gt;=100&quot;);</span><br><span class="line">        _;</span><br><span class="line">    &#125;</span><br><span class="line">    function incBy(uint _x) external cap(_x)&#123;</span><br><span class="line">        count += _x;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    //三明治式的修改器</span><br><span class="line">    modifier sandwich()&#123;</span><br><span class="line">        count +=10;</span><br><span class="line">        _;</span><br><span class="line">        count *=2;</span><br><span class="line">    &#125;</span><br><span class="line">    function foo() external sandwich&#123;</span><br><span class="line">        count +=1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-6-构造函数">2.6 构造函数</h3>
+<p>只有合约发布时，会执行一次</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract Constructor&#123;</span><br><span class="line">    address public owner;</span><br><span class="line">    uint public x;</span><br><span class="line"></span><br><span class="line">    constructor(uint _x)&#123;</span><br><span class="line">        owner = msg.sender;</span><br><span class="line">        x = _x;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-7-数组">2.7 数组</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract Array&#123;</span><br><span class="line">   uint[] public nums = [1, 2, 3];</span><br><span class="line">   uint[3] public numsFixed = [4, 5, 6];</span><br><span class="line">   uint[] public arr;</span><br><span class="line"></span><br><span class="line">   function examples() external&#123;</span><br><span class="line">      nums.push(4); //新增</span><br><span class="line">      uint x = nums[1]; //访问</span><br><span class="line">      nums[2] = 777; //修改</span><br><span class="line">      delete nums[1]; //删除数字，该删除不会减小数组长度，会将指定索引位置的值变更为默认值0</span><br><span class="line">      nums.pop();  //队列推出，数组长队会变小</span><br><span class="line">      uint len = nums.length;</span><br><span class="line"></span><br><span class="line">      //内存中创建数组，内存中必须固定长度</span><br><span class="line">      uint[] memory a = new uint[](5);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   //全部返回数组，需要方法使用memory来返回</span><br><span class="line">   function returnArray() external view returns (uint[] memory)&#123;</span><br><span class="line">      return nums;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   //数组中删除指定元素-方式一，比较浪费gas</span><br><span class="line">   function remove(uint _index) public &#123;</span><br><span class="line">      require(_index &lt; arr.length,&quot;index out of bound&quot;);</span><br><span class="line">      for (uint i=_index;i&lt;arr.length-1;i++)&#123;</span><br><span class="line">         arr[i] = arr[i+1];</span><br><span class="line">      &#125;</span><br><span class="line">      arr.pop();</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   //数组中删除指定元素-方式二，节省gas，但会打乱数组顺序</span><br><span class="line">   function remove2(uint _index) public&#123;</span><br><span class="line">      arr[_index] = arr[arr.length-1];</span><br><span class="line">      arr.pop();</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-8-映射">2.8 映射</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line"></span><br><span class="line">contract Mapping&#123;</span><br><span class="line">    mapping(address =&gt; uint) public balances;</span><br><span class="line">    mapping(address =&gt; bool) public inserted;</span><br><span class="line">    address[] public keys;</span><br><span class="line">    mapping(address =&gt; mapping(address =&gt; bool)) public isFriend;</span><br><span class="line"></span><br><span class="line">    function examples() external&#123;</span><br><span class="line">        balances[msg.sender] = 123;</span><br><span class="line">        uint bal = balances[msg.sender];</span><br><span class="line">        uint bal2 = balances[address(1)]; //若不存在，则返回0x0000...</span><br><span class="line"></span><br><span class="line">        balances[msg.sender] += 456;</span><br><span class="line">        delete balances[msg.sender]; //删除数据，其实是将该key对应的值设置为默认值，并不是真正的删除</span><br><span class="line"></span><br><span class="line">        isFriend[msg.sender][address(this)] = true;</span><br><span class="line">    &#125;</span><br><span class="line">    function set(address _key,uint _val) external&#123;</span><br><span class="line">        balances[_key] = _val;</span><br><span class="line">        if (!inserted[_key])&#123;</span><br><span class="line">            inserted[_key] = true;</span><br><span class="line">            keys.push(_key);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    function getSize() external view returns (uint)&#123;</span><br><span class="line">        return keys.length;</span><br><span class="line">    &#125;</span><br><span class="line">    function first() external view returns (uint)&#123;</span><br><span class="line">        return balances[keys[0]];</span><br><span class="line">    &#125;</span><br><span class="line">    function last() external view returns (uint)&#123;</span><br><span class="line">        return balances[keys[keys.length - 1]];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function set(uint _i) external view returns (uint)&#123;</span><br><span class="line">        return balances[keys[_i]];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-9-结构体-枚举">2.9 结构体、枚举</h3>
+<p>结构体：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract Structs&#123;</span><br><span class="line">    struct Car&#123;</span><br><span class="line">        string model;</span><br><span class="line">        uint year;</span><br><span class="line">        address owner;</span><br><span class="line">    &#125;</span><br><span class="line">    Car public car;</span><br><span class="line">    Car[] public cars;</span><br><span class="line">    mapping(address =&gt; Car[]) public carsByOwner;</span><br><span class="line">    </span><br><span class="line">    function examples() external&#123;</span><br><span class="line">        // 标记为内存，修改不会变更链上状态，方法执行后，会被释放</span><br><span class="line">        Car memory toyota = Car(&quot;Toyota&quot;,1990,msg.sender);</span><br><span class="line">        Car memory lanbo = Car(&#123;model:&quot;Lamborghini&quot;, year:1980, owner:msg.sender&#125;);</span><br><span class="line">        Car memory tesla;</span><br><span class="line">        tesla.model = &quot;Tesla&quot;;</span><br><span class="line">        tesla.year = 2010;</span><br><span class="line">        tesla.owner = msg.sender;</span><br><span class="line">        cars.push(Car(&quot;Ferrari&quot;,2020,msg.sender)); </span><br><span class="line"></span><br><span class="line">        //标记为存储，可以修改掉cars[0]在链上的数据</span><br><span class="line">        Car storage _car = cars[0];</span><br><span class="line">        _car.year = 1999;</span><br><span class="line">        delete _car.owner;</span><br><span class="line">        delete cars[1];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>枚举：<br>
+默认值是枚举清单中的第一个</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract Enum&#123;</span><br><span class="line">    enum Status&#123;</span><br><span class="line">        None,</span><br><span class="line">        Pending,</span><br><span class="line">        Shipped,</span><br><span class="line">        Completed,</span><br><span class="line">        Rejected,</span><br><span class="line">        Canceled</span><br><span class="line">    &#125;</span><br><span class="line">    Status public status;</span><br><span class="line">    struct Order&#123;</span><br><span class="line">        address buyer;</span><br><span class="line">        Status status;</span><br><span class="line">    &#125;</span><br><span class="line">    Order[] public orders;</span><br><span class="line">    function get() view external returns (Status)&#123;</span><br><span class="line">        return status;</span><br><span class="line">    &#125;</span><br><span class="line">    function set(Status _status) external&#123;</span><br><span class="line">        status = _status;</span><br><span class="line">    &#125;</span><br><span class="line">    function ship() external&#123;</span><br><span class="line">        status = Status.Shipped;</span><br><span class="line">    &#125;</span><br><span class="line">    function reset() external&#123;</span><br><span class="line">        delete status;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-进阶">3. 进阶</h2>
+<h3 id="3-1-存储">3.1 存储</h3>
+<p>存储分为：<br>
+storage 链上存储<br>
+memory 内存存储<br>
+calldata 类似于memory。低配版memory，可以用于节省gas，因此使用受限：只能用于external函数的输入参数，是不可变的，不能被覆盖和更改。<br>
+<code>注</code>：函数外部声明的变量默认储存在storage里，函数内部声明的变量默认储存在memory里</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line"></span><br><span class="line">contract DataLocations &#123;</span><br><span class="line">    struct MyStruct&#123;</span><br><span class="line">        uint foo;</span><br><span class="line">        string text;</span><br><span class="line">    &#125;</span><br><span class="line">    mapping(address =&gt; MyStruct) public myStructs;</span><br><span class="line">   </span><br><span class="line">   //输入参数，也可使用calldata，尽量优先使用calldata，节省gas</span><br><span class="line">    function examples(uint[] memory y, string memory s) external returns (uint[] memory)&#123;</span><br><span class="line">        myStructs[msg.sender] = MyStruct(&#123;foo:123,text:&quot;bar&quot;&#125;);</span><br><span class="line">        MyStruct storage myStruct = myStructs[msg.sender];</span><br><span class="line">        myStruct.text = &quot;foo&quot;;</span><br><span class="line">        MyStruct memory readOnly = myStructs[msg.sender];</span><br><span class="line">        readOnly.foo = 456;</span><br><span class="line"></span><br><span class="line">        uint[] memory memArr = new uint[](3);</span><br><span class="line">        memArr[0] = 234;</span><br><span class="line">        return memArr;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-事件">3.2 事件</h3>
+<p>只要有状态变更，也就是只要有写操作，就应该有event事件<br>
+事件相比较于状态变量，更节省gas，使用更清晰：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract Event &#123;</span><br><span class="line">    event Log(string message,uint val);</span><br><span class="line">    //带有索引的事件，方便链下查询</span><br><span class="line">    //一个事件中，最多只能定义3个索引变量</span><br><span class="line">    event IndexedLog(address indexed sender, uint val);</span><br><span class="line">    //事件是写入方法</span><br><span class="line">    function example() external&#123;</span><br><span class="line">        emit Log(&quot;foo&quot;, 1234);</span><br><span class="line">        emit IndexedLog(msg.sender,789);</span><br><span class="line">    &#125;</span><br><span class="line">    event Message(address indexed _from,address indexed _to, string message);</span><br><span class="line"></span><br><span class="line">    function sendMessage(address _to, string calldata message) external&#123;</span><br><span class="line">        emit Message(msg.sender,_to,message);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-3-继承">3.3 继承</h3>
+<h4 id="3-3-1-普通继承">3.3.1 普通继承</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">// virtual表示该方法可以被重写</span><br><span class="line">contract A &#123;</span><br><span class="line">    function foo() public pure virtual returns (string memory)&#123;</span><br><span class="line">        return &quot;A&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    function bar() public pure virtual returns (string memory)&#123;</span><br><span class="line">        return &quot;A&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    function baz() public pure returns (string memory)&#123;</span><br><span class="line">        return &quot;A&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">// override表示该方法是重写了父合约中的方法</span><br><span class="line">contract B is A&#123;</span><br><span class="line">    function foo() public pure override returns (string memory)&#123;</span><br><span class="line">        return &quot;B&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    //已经重写的合约，想要被子合约重写，仍旧需要标记virtual</span><br><span class="line">    function bar() public pure virtual override returns (string memory)&#123;</span><br><span class="line">        return &quot;B&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract C is B&#123;</span><br><span class="line">    function bar() public pure override returns (string memory)&#123;</span><br><span class="line">        return &quot;C&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="3-3-2-线性继承">3.3.2 线性继承</h4>
+<p>继承涉及到多线继承，即Y继承X，Z继承X和Y。则Z实现继承是，依据基础合约优先，派生合约靠后的原则：Z is X,Y。如果不按该规则，编译会报错。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line"></span><br><span class="line">// virtual表示该方法可以被重写</span><br><span class="line">contract X &#123;</span><br><span class="line">    function foo() public pure virtual returns (string memory)&#123;</span><br><span class="line">        return &quot;X&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    function bar() public pure virtual returns (string memory)&#123;</span><br><span class="line">        return &quot;X&quot;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function x() public pure returns (string memory)&#123;</span><br><span class="line">        return &quot;X&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// override表示该方法是重写了父合约中的方法</span><br><span class="line">contract Y is X&#123;</span><br><span class="line">    function foo() public pure virtual override returns (string memory)&#123;</span><br><span class="line">        return &quot;Y&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    //已经重写的合约，想要被子合约重写，仍旧需要标记virtual</span><br><span class="line">    function bar() public pure virtual override returns (string memory)&#123;</span><br><span class="line">        return &quot;Y&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    function y() public pure returns (string memory)&#123;</span><br><span class="line">        return &quot;Y&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//一定要先继承X，后继承Y，否则编译报错</span><br><span class="line">contract Z is X, Y&#123;</span><br><span class="line">    function foo() public pure override(X,Y) returns (string memory)&#123;</span><br><span class="line">        return &quot;Z&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">    //已经重写的合约，想要被子合约重写，仍旧需要标记virtual</span><br><span class="line">    function bar() public pure override(X,Y) returns (string memory)&#123;</span><br><span class="line">        return &quot;Z&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="3-3-3-多个继承合约结构体初始化">3.3.3 多个继承合约结构体初始化</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line"></span><br><span class="line">contract S &#123;</span><br><span class="line">    string public name;</span><br><span class="line">    constructor(string memory _name)&#123;</span><br><span class="line">        name = _name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract T&#123;</span><br><span class="line">    string public text;</span><br><span class="line">    constructor(string memory _text)&#123;</span><br><span class="line">        text = _text;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//构造函数初始化的顺序是，按照从父到子的顺序进行的</span><br><span class="line"></span><br><span class="line">// 父合约初始化-方式1</span><br><span class="line">contract U is S(&quot;s&quot;),T(&quot;t&quot;) &#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 父合约初始化-方式2</span><br><span class="line">contract V is S,T &#123;</span><br><span class="line">    constructor(string memory _name,string memory _text) S(_name) T(_text)&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 父合约初始化-方式3</span><br><span class="line">contract VV is S(&quot;s&quot;),T &#123;</span><br><span class="line">    constructor(string memory _text) T(_text)&#123;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="3-3-4-调用父级合约">3.3.4 调用父级合约</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">contract E &#123;</span><br><span class="line">    event Log(string message);</span><br><span class="line"></span><br><span class="line">    function foo() public virtual&#123;</span><br><span class="line">        emit Log(&quot;E.foo&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    function bar() public virtual &#123;</span><br><span class="line">        emit Log(&quot;E.bar&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">contract F is E&#123;</span><br><span class="line">    function foo() public virtual override &#123;</span><br><span class="line">        emit Log(&quot;F.foo&quot;);</span><br><span class="line">        E.foo();</span><br><span class="line">    &#125;</span><br><span class="line">    function bar() public virtual override &#123;</span><br><span class="line">        emit Log(&quot;F.bar&quot;);</span><br><span class="line">        super.bar();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract G is E&#123;</span><br><span class="line">    function foo() public virtual override&#123;</span><br><span class="line">        emit Log(&quot;G.foo&quot;);</span><br><span class="line">        E.foo();</span><br><span class="line">    &#125;</span><br><span class="line">    function bar() public virtual override&#123;</span><br><span class="line">        emit Log(&quot;G.bar&quot;);</span><br><span class="line">        super.bar();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">contract H is F,G&#123;</span><br><span class="line">    function foo() public override(F,G)&#123;</span><br><span class="line">        F.foo();</span><br><span class="line">    &#125;</span><br><span class="line">    function bar() public override(F,G)&#123;</span><br><span class="line">        super.bar(); //F和G合约的bar都会被执行</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-4-支付eth-回退函数-发送eth">3.4 支付ETH、回退函数、发送ETH</h3>
+<h4 id="3-4-1-支付">3.4.1 支付</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line"></span><br><span class="line">contract Payable &#123;</span><br><span class="line">    address payable public owner;  //加上payable属性，则该地址支持eth支付</span><br><span class="line">    constructor()&#123;</span><br><span class="line">        owner = payable(msg.sender);  //被包含在payable中，才能赋值</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    function deposit() external payable&#123;&#125;  //方法标记后，该方法可以接收处理eth</span><br><span class="line"></span><br><span class="line">    function getBalance() external view returns(uint)&#123;</span><br><span class="line">        return address(this).balance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="3-4-2-回退-receive-和fallback">3.4.2 回退–receive()和fallback()</h4>
+<p>receive()：<br>
+功能：通过合约接收和转发以太币<br>
+特点：<br>
+(1) 一个合约至多含有一个receive()函数<br>
+(2) 没有function关键字<br>
+(3) 必须含有payable关键字<br>
+(4) 没有参数，没有返回值<br>
+(5) 可见性必须声明为external<br>
+(6) 允许使用modifier修改器<br>
+(7) 该函数通过.send()和.transfer()转发以太币<br>
+(8) 若想要让你的contract(即合约账户)接收以太币，在未定义fallback() external payable{}函数时，需实现receive()函数<br>
+(9) 在gasLimit允许范围内可执行复杂操作</p>
+<p>fallback()：<br>
+功能：当合约中没有任何匹配的函数可调用时，调用fallback()函数<br>
+特点：<br>
+(1) 一个合约至多含有一个fallback()函数<br>
+(2) 没有function关键字<br>
+(3) payable关键字是可选项，取决于该函数是否需要接收以太币，智能合约接收到eth，并且有payable关键词，就会触发该方法<br>
+(4) 该函数可代替receive()函数以实现合约接受转发以太币的功能<br>
+(5) 可见性必须声明为external<br>
+(6) 允许使用modifier修改器<br>
+(7) 在gasLimit允许范围内可执行复杂操作</p>
+<p><code>注：</code> function() public payable {} 等价于fallback()</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">/*</span><br><span class="line">  fallback() or receive()?</span><br><span class="line">      Ether is send to contract</span><br><span class="line">                 |</span><br><span class="line">          is msg.data empty?  是否传入了额外数据</span><br><span class="line">                 / \</span><br><span class="line">               yes  no</span><br><span class="line">                /    \</span><br><span class="line">  receive() exists?  fallback()   一个合约中最多只能有一个receive()，如果不存在，则自动调用fallback()</span><br><span class="line">             / \</span><br><span class="line">           yes  no</span><br><span class="line">           /     \</span><br><span class="line">     receive()   fallback()</span><br><span class="line">*/</span><br><span class="line"></span><br><span class="line">contract Fallback &#123;</span><br><span class="line">    event Log(string func, address sender, uint value, bytes data);</span><br><span class="line"></span><br><span class="line">    //fallback的第一种使用方式，不存在的方法的调用后，然后就会触发该方法的回调</span><br><span class="line">    fallback() external payable&#123;</span><br><span class="line">        emit Log(&quot;fallback&quot;,msg.sender,msg.value,msg.data);</span><br><span class="line">    &#125;</span><br><span class="line">    //fallback的第二种使用方式</span><br><span class="line">    fallback (bytes calldata input) external [payable] returns (bytes memory output)&#123;</span><br><span class="line">        emit Log(&quot;fallback second&quot;,msg.sender,msg.value,msg.data);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    //只接收eth  </span><br><span class="line">    receive() external payable&#123;</span><br><span class="line">        emit Log(&quot;receive&quot;,msg.sender,msg.value,&quot;&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="3-4-2-发送eth">3.4.2 发送ETH</h4>
+<p>三种方法：<br>
+transfer 返回revert()，只会消耗2300个gas<br>
+send  返回bool，只会消耗2300个gas<br>
+call  返回bool和data，会发出去所有gas，供后续逻辑消耗</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">// SPDX-License-Identifier: MIT</span><br><span class="line">pragma solidity ^0.8.7;</span><br><span class="line">//发送者合约</span><br><span class="line">contract SendEth &#123;</span><br><span class="line">    constructor() payable&#123;&#125;</span><br><span class="line"></span><br><span class="line">    receive() external payable&#123;&#125;</span><br><span class="line"></span><br><span class="line">    // 发送eth，只会带有2300gas，如果发生异常，只会报出revert()</span><br><span class="line">    function sendViaTransfer(address payable _to) external payable&#123;</span><br><span class="line">        _to.transfer(123);</span><br><span class="line">    &#125;</span><br><span class="line">    // 会返回判断</span><br><span class="line">    function sendViaSend(address payable _to) external payable&#123;</span><br><span class="line">        bool send = _to.send(123);</span><br><span class="line">        require(send,&quot;send failed&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    function sendViaCall(address payable _to) external payable&#123;</span><br><span class="line">        (bool success,) = _to.call&#123;value: 123&#125;(&quot;&quot;); //其中(&quot;&quot;)表示要发送的数据</span><br><span class="line">        require(success,&quot;call failed&quot;);</span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//接收者合约</span><br><span class="line">contract EthReceiver&#123;</span><br><span class="line">    event Log(uint amount,uint gas);</span><br><span class="line">    receive() external payable&#123;</span><br><span class="line">        emit Log(msg.value, gasleft());  //剩余的gas</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4-总结">4. 总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/4337926c/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/solidity/" rel="tag">solidity</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/cf5190ad/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            solidity v8.0新增特性
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/3b89cd2c/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">uniswap-v2部署过程</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

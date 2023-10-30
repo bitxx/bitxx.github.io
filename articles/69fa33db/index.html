@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>fabric基础-Fabric-CA应用案例 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/fabric/fabric基础/fabric基础-Fabric-CA应用案例"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  fabric基础-Fabric-CA应用案例
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/69fa33db/" class="article-date">
+  <time datetime="2021-06-26T14:41:36.000Z" itemprop="datePublished">2021-06-26</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Hyperledger-Fabric/">Hyperledger Fabric</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Hyperledger-Fabric/Fabric%E5%9F%BA%E7%A1%80/">Fabric基础</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">2.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">12 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>通过一套案例，演示Fabric CA在fabric网络中的应用</p>
+<span id="more"></span>
+<h2 id="拓扑结构">拓扑结构</h2>
+<p>本次案例拓扑结构：</p>
+<ol>
+<li>总共3各组织，一个Orderer组织，两个Peer组织</li>
+<li>1个根CA和3个隶属于根CA的中间CA</li>
+<li>3个中间CA分别负责一个组织的证书生成等。<br>
+具体拓扑图如下所示</li>
+</ol>
+<img src="/articles/69fa33db/1.png" class="" title="拓扑结构">
+<h2 id="端口号分配">端口号分配</h2>
+<p>其中，tls表示为安全通信提供CA证书服务，可选，生产环境一般必须使用；operations.listenAddress为运维监听接口，用于监听维护ca节点：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1. RootCA：            prot：7054    operations.listenAddress：127.0.0.1:9443</span><br><span class="line">2. IntermediaCA1：     prot：7055    operations.listenAddress：127.0.0.1:9444</span><br><span class="line">3. IntermediaCAtls1：  prot：8055    operations.listenAddress：127.0.0.1:9445</span><br><span class="line">4. IntermediaCA2：     prot：7056    operations.listenAddress：127.0.0.1:9446</span><br><span class="line">5. IntermediaCAtls2：  prot：8056    operations.listenAddress：127.0.0.1:9447</span><br><span class="line">6. IntermediaCA3：     prot：7057    operations.listenAddress：127.0.0.1:9448</span><br><span class="line">7. IntermediaCAtls3：  prot：8057    operations.listenAddress：127.0.0.1:9449</span><br></pre></td></tr></table></figure>
+<h2 id="ca服务初始化并启动">CA服务初始化并启动</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">RootCA初始化并启动（默认端口7054，运维监听127.0.0.1:9443）</span></span><br><span class="line">./fabric-ca-server init -b admin:adminpw --home ./rootca</span><br><span class="line">./fabric-ca-server start -b admin:adminpw --home ./rootca --cfg.affiliations.allowremove --cfg.identities.allowremove</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ca1</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># IntermediaCA1初始化并启动（配置文件改端口为7055，运维监听127.0.0.1:9444）,中间CA通过-u关联根CA</span></span></span><br><span class="line">./fabric-ca-server init -b admin1:adminpw1 --home ./intermediaca1 -u http://admin:adminpw@localhost:7054</span><br><span class="line">./fabric-ca-server start -b admin1:adminpw1 --home ./intermediaca1 --cfg.affiliations.allowremove --cfg.identities.allowremove</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># IntermediaCAtls1初始化并启动（配置文件改端口为8055，运维监听127.0.0.1:9445）</span></span></span><br><span class="line">./fabric-ca-server init -b admin1:adminpw1 --home ./intermediacatls1 -u http://admin:adminpw@localhost:7054</span><br><span class="line">./fabric-ca-server start -b admin1:adminpw1 --home ./intermediacatls1 --cfg.affiliations.allowremove --cfg.identities.allowremove</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ca2</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># IntermediaCA2初始化并启动（配置文件改端口为7056，运维监听127.0.0.1:9446）</span></span></span><br><span class="line">./fabric-ca-server init -b admin2:adminpw2 --home ./intermediaca2 -u http://admin:adminpw@localhost:7054</span><br><span class="line">./fabric-ca-server start -b admin2:adminpw2 --home ./intermediaca2 --cfg.affiliations.allowremove --cfg.identities.allowremove</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># IntermediaCAtls2初始化并启动（配置文件改端口为8056，运维监听127.0.0.1:9447）</span></span></span><br><span class="line">./fabric-ca-server init -b admin2:adminpw2 --home ./intermediacatls2 -u http://admin:adminpw@localhost:7054</span><br><span class="line">./fabric-ca-server start -b admin2:adminpw2 --home ./intermediacatls2 --cfg.affiliations.allowremove --cfg.identities.allowremove</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ca3</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># IntermediaCA3初始化并启动（配置文件改端口为7057，运维监听127.0.0.1:9448）</span></span></span><br><span class="line">./fabric-ca-server init -b admin3:adminpw3 --home ./intermediaca3 -u http://admin:adminpw@localhost:7054</span><br><span class="line">./fabric-ca-server start -b admin3:adminpw3 --home ./intermediaca3 --cfg.affiliations.allowremove --cfg.identities.allowremove</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># IntermediaCAtls3初始化并启动（配置文件改端口为8057，运维监听127.0.0.1:9449）</span></span></span><br><span class="line">./fabric-ca-server init -b admin3:adminpw3 --home ./intermediacatls3 -u http://admin:adminpw@localhost:7054</span><br><span class="line">./fabric-ca-server start -b admin3:adminpw3 --home ./intermediacatls3 --cfg.affiliations.allowremove --cfg.identities.allowremove</span><br></pre></td></tr></table></figure>
+<h2 id="ca客户端生成证书">CA客户端生成证书</h2>
+<p>每个组织证书生成类似，这里以orderer组织的IntermediaCA1和IntermediaCAtls1生成的证书为例。</p>
+<h3 id="1-intermediaca1生成证书">1. IntermediaCA1生成证书</h3>
+<ol>
+<li>生成jason.com的MSP</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记账户</span></span><br><span class="line">./fabric-ca-client enroll -u http://admin1:adminpw1@localhost:7055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看组织</span></span><br><span class="line">./fabric-ca-client  affiliation list -u http://admin1:adminpw1@localhost:7055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">删除旧默认组织(org1 org2)</span></span><br><span class="line">./fabric-ca-client  affiliation remove --force org1 -u http://admin1:adminpw1@localhost:7055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line">./fabric-ca-client  affiliation remove --force org2 -u http://admin1:adminpw1@localhost:7055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">添加组织(com com.jason)</span></span><br><span class="line">fabric-ca-client affiliation add com -u http://admin1:adminpw1@localhost:7055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line">fabric-ca-client affiliation add com.jason -u http://admin1:adminpw1@localhost:7055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>生成Admin@jason.com的MSP</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">注册Admin@jason.com</span></span><br><span class="line">./fabric-ca-client register -u http://admin1:adminpw1@localhost:7055 --id.name Admin@jason.com --id.type client --id.affiliation &quot;com.jason&quot; --id.attrs &#x27;&quot;hf.Registrar.Roles=client,orderer,peer,user&quot;,&quot;hf.Registrar.DelegateRoles=client,orderer,peer,user&quot;,hf.Registrar.Attributes=*,hf.GenCRL=true,hf.Revoker=true,hf.AffiliationMgr=true,hf.IntermediateCA=true,role=admin:ecert&#x27; --id.secret=123456 --csr.cn=jason.com --csr.hosts=&#x27;jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记Admin@jason.com</span></span><br><span class="line">./fabric-ca-client enroll -u http://Admin@jason.com:123456@localhost:7055 --csr.cn=jason.com --csr.hosts=&#x27;jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">为Admin@jason.com生成msp，就是专门为admin建立一份证书存放位置</span></span><br><span class="line">mkdir ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp/admincerts</span><br><span class="line">cp ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp/signcerts/cert.pem ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp/admincerts/</span><br><span class="line">mkdir ./intermedia1/crypto_config/ordererOrganizations/jason.com/msp/admincerts</span><br><span class="line">cp ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp/signcerts/cert.pem ./intermedia1/crypto_config/ordererOrganizations/jason.com/msp/admincerts/</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>生成orderer0.jason.com的MSP</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">注册orderer0.jason.com</span></span><br><span class="line">./fabric-ca-client register -u http://admin1:adminpw1@localhost:7055 --id.name orderer0.jason.com --id.type orderer --id.affiliation &quot;com.jason&quot; --id.attrs &#x27;&quot;role=orderer&quot;,ecert=true&#x27; --id.secret=123456 --csr.cn=orderer0.jason.com --csr.hosts=&#x27;orderer0.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记orderer0.jason.com</span></span><br><span class="line">./fabric-ca-client enroll -d -u http://orderer0.jason.com:123456@localhost:7055 --csr.cn=orderer0.jason.com --csr.hosts=&#x27;orderer0.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/orderers/orderer0.jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">生成MSP</span></span><br><span class="line">mkdir ./intermedia1/crypto_config/ordererOrganizations/jason.com/orderers/orderer0.jason.com/msp/admincerts</span><br><span class="line">cp ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp/signcerts/cert.pem ./intermedia1/crypto_config/ordererOrganizations/jason.com/orderers/orderer0.jason.com/msp/admincerts/</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>生成orderer1.jason.com的MSP<br>
+同上第3步，orderer0，只是将0变为1</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">注册orderer1.jason.com</span></span><br><span class="line">./fabric-ca-client register -u http://admin1:adminpw1@localhost:7055 --id.name orderer1.jason.com --id.type orderer --id.affiliation &quot;com.jason&quot; --id.attrs &#x27;&quot;role=orderer&quot;,ecert=true&#x27; --id.secret=123456 --csr.cn=orderer1.jason.com --csr.hosts=&#x27;orderer1.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记orderer1.jason.com</span></span><br><span class="line">./fabric-ca-client enroll -d -u http://orderer1.jason.com:123456@localhost:7055 --csr.cn=orderer1.jason.com --csr.hosts=&#x27;orderer1.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/orderers/orderer1.jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">生成MSP</span></span><br><span class="line">mkdir ./intermedia1/crypto_config/ordererOrganizations/jason.com/orderers/orderer1.jason.com/msp/admincerts</span><br><span class="line">cp ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp/signcerts/cert.pem ./intermedia1/crypto_config/ordererOrganizations/jason.com/orderers/orderer1.jason.com/msp/admincerts/</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li>生成orderer2.jason.com的MSP<br>
+同上第3步，orderer0，只是将0变为2</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">注册orderer2.jason.com</span></span><br><span class="line">./fabric-ca-client register -u http://admin1:adminpw1@localhost:7055 --id.name orderer2.jason.com --id.type orderer --id.affiliation &quot;com.jason&quot; --id.attrs &#x27;&quot;role=orderer&quot;,ecert=true&#x27; --id.secret=123456 --csr.cn=orderer2.jason.com --csr.hosts=&#x27;orderer2.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记orderer2.jason.com</span></span><br><span class="line">./fabric-ca-client enroll -d -u http://orderer2.jason.com:123456@localhost:7055 --csr.cn=orderer2.jason.com --csr.hosts=&#x27;orderer2.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/orderers/orderer2.jason.com/msp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">生成MSP</span></span><br><span class="line">mkdir ./intermedia1/crypto_config/ordererOrganizations/jason.com/orderers/orderer2.jason.com/msp/admincerts</span><br><span class="line">cp ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/msp/signcerts/cert.pem ./intermedia1/crypto_config/ordererOrganizations/jason.com/orderers/orderer2.jason.com/msp/admincerts/</span><br></pre></td></tr></table></figure>
+<h3 id="2-intermediacatls1生成证书">2. IntermediaCAtls1生成证书</h3>
+<ol>
+<li>生成jason.com的MSP</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记账户</span></span><br><span class="line">./fabric-ca-client enroll -u http://admin1:adminpw1@localhost:8055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看组织</span></span><br><span class="line">./fabric-ca-client  affiliation list -u http://admin1:adminpw1@localhost:8055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">删除旧默认组织(org1 org2)</span></span><br><span class="line">./fabric-ca-client  affiliation remove --force org1 -u http://admin1:adminpw1@localhost:8055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp</span><br><span class="line">./fabric-ca-client  affiliation remove --force org2 -u http://admin1:adminpw1@localhost:8055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">添加组织(com com.jason)</span></span><br><span class="line">./fabric-ca-client affiliation add com -u http://admin1:adminpw1@localhost:8055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp</span><br><span class="line">./fabric-ca-client affiliation add com.jason -u http://admin1:adminpw1@localhost:8055 --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>生成Admin@jason.com的TLS</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">注册Admin@jason.com</span></span><br><span class="line">./fabric-ca-client register -u http://admin1:adminpw1@localhost:8055 --id.name Admin@jason.com --id.type client --id.affiliation &quot;com.jason&quot; --id.attrs &#x27;&quot;hf.Registrar.Roles=client,orderer,peer,user&quot;,&quot;hf.Registrar.DelegateRoles=client,orderer,peer,user&quot;,hf.Registrar.Attributes=*,hf.GenCRL=true,hf.Revoker=true,hf.AffiliationMgr=true,hf.IntermediateCA=true,role=admin:ecert&#x27; --id.secret=123456 --csr.cn=jason.com --csr.hosts=&#x27;jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp</span><br><span class="line"><span class="meta prompt_"> </span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记Admin@jason.com</span></span><br><span class="line">./fabric-ca-client enroll -d --enrollment.profile tls -u http://Admin@jason.com:123456@localhost:8055 --csr.cn=jason.com --csr.hosts=&#x27;jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tlstmp </span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">为Admin@jason.com生成tls，就是专门为admin建立一份证书存放位置。需要注意，tls证书需要从根ca中拷贝出ca-chain.pem到中间ca的指定位置</span></span><br><span class="line">mkdir ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tls</span><br><span class="line">cp ../intermediacatls1/ca-chain.pem ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tls/ca.crt</span><br><span class="line">cp ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tlstmp/signcerts/cert.pem ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tls/client.crt</span><br><span class="line">cp ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tlstmp/keystore/2c67df27fc1e0cb607d7195fe0938ae31aae4e9cfb2828c78f051495b5305d81_sk ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tls/client.key</span><br><span class="line">cp -r ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tlstmp/tlscacerts ./intermedia1/crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line">cp -r ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tlstmp/tlsintermediatecerts ./intermedia1/crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line">rm -rf ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/Admin@jason.com/tlstmp</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>生成orderer0.jason.com的TLS</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">注册orderer0.jason.com</span></span><br><span class="line">./fabric-ca-client register -u http://admin1:adminpw1@localhost:8055 --id.name orderer0.jason.com --id.type orderer --id.affiliation &quot;com.jason&quot; --id.attrs &#x27;&quot;role=orderer&quot;,ecert=true&#x27; --id.secret=123456 --csr.cn=orderer0.jason.com --csr.hosts=&#x27;orderer0.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/tlstmp </span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">登记orderer0.jason.com</span></span><br><span class="line">./fabric-ca-client enroll -d --enrollment.profile tls -u http://orderer0.jason.com:123456@localhost:8055 --csr.cn=orderer0.jason.com --csr.hosts=&#x27;orderer0.jason.com&#x27; --home ./intermedia1  -M ./crypto_config/ordererOrganizations/jason.com/users/orderer0@jason.com/tlstmp</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">生成MSP</span></span><br><span class="line">mkdir ./intermedia1/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tls</span><br><span class="line">cp ./intermediacatls1/ca-chain.pem ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tls/ca.crt</span><br><span class="line">cp ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tlstmp/signcerts/cert.pem ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tls/client.crt</span><br><span class="line">cp ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tlstmp/keystore/xxxxxxxx_sk ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tls/client.key</span><br><span class="line">cp -r ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tlstmp/tlscacerts ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line">cp -r ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tlstmp/tlsintermediatecerts ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/msp</span><br><span class="line">rm -rf ./fabric_ca_client/crypto_config/ordererOrganizations/jason.com/users/orderer0.jason.com/tlstmp</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>
+<p>生成orderer1.jason.com的TLS<br>
+同上第3步，orderer0，只是将0变为1</p>
+</li>
+<li>
+<p>生成orderer2.jason.com的TLS<br>
+同上第3步，orderer0，只是将0变为2</p>
+</li>
+</ol>
+<h2 id="总结">总结</h2>
+<p>本文根据网路拓扑展示了一个拥有中间CA的认证中心的部署方式，这里虽然只列了Orderer组织的CA部署方式，但其余组织的操作也基本都一样。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/69fa33db/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fabric/" rel="tag">Fabric</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/eabb4b3e/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            fabric应用-ca官方文档编译及发布
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/342ca2c8/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">fabric基础-Fabric CA介绍及使用</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

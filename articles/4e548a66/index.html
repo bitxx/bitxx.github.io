@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>sui基础(4)-永久测试网节点部署 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/sui/sui基础(4)-永久测试网节点部署"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  sui基础(4)-永久测试网节点部署
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/4e548a66/" class="article-date">
+  <time datetime="2023-03-30T06:03:19.000Z" itemprop="datePublished">2023-03-30</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Sui/">Sui</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">2.5k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">11 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>部署全节点、验证人节点</p>
+<span id="more"></span>
+<h2 id="1-编译">1. 编译</h2>
+<p>Macos交叉编译配置参考：<a href="/articles/a6749ab9">MacOS中Rust交叉编译</a></p>
+<h3 id="1-1-安装依赖">1.1 安装依赖</h3>
+<p>ubuntu 20.04环境依赖安装</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">依赖安装</span></span><br><span class="line">sudo apt-get update \</span><br><span class="line">&amp;&amp; sudo apt-get install -y --no-install-recommends \</span><br><span class="line">tzdata \</span><br><span class="line">libprotobuf-dev \</span><br><span class="line">ca-certificates \</span><br><span class="line">build-essential \</span><br><span class="line">libssl-dev \</span><br><span class="line">libclang-dev \</span><br><span class="line">pkg-config \</span><br><span class="line">openssl \</span><br><span class="line">protobuf-compiler \</span><br><span class="line">git \</span><br><span class="line">clang \</span><br><span class="line">cmake</span><br></pre></td></tr></table></figure>
+<p>macos环境依赖安装</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">安装macos默认cli客户端，然后根据需要自行补充安装即可</span></span><br></pre></td></tr></table></figure>
+<h3 id="1-2-编译节点文件-sui-sui-node">1.2 编译节点文件(sui、sui-node)</h3>
+<p>默认我编译了这两个常用的，当然，还有别的比如:<code>validator</code>，根据自己需要，同样方式生成即可</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">下载源码</span></span><br><span class="line">git clone https://github.com/MystenLabs/sui.git</span><br><span class="line">cd sui</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">要连接或者部署开发网节点，就一定要切换到指定分支，要不然会因为版本不一致而无法连接</span></span><br><span class="line">git checkout testnet </span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">编译，其中sui相当于客户端，sui-node用于部署节点</span></span><br><span class="line">cargo build --release --bin sui</span><br><span class="line">cargo build --release --bin sui-node</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment"># 交叉编译linux，其中sui相当于客户端，sui-node用于部署节点</span></span></span><br><span class="line">TARGET_CC=x86_64-unknown-linux-gnu-gcc  cargo build --release --bin sui --target x86_64-unknown-linux-gnu</span><br><span class="line">TARGET_CC=x86_64-unknown-linux-gnu-gcc  cargo build --release --bin sui-node --target x86_64-unknown-linux-gnu</span><br></pre></td></tr></table></figure>
+<h3 id="1-3-编译索引器-sui-indexer">1.3 编译索引器(sui-indexer)</h3>
+<p>这个用来加速节点的rpc访问速度，减轻node压力。没有索引器，部分rpc没法使用。建议使用，机器有限时，可部署在和节点相同的机器中。<br>
+<code>sui-indexer的编译</code>，由于编译涉及到libpq命令行工具，因此需要在对应的系统上进行编译，不能交叉编译。</p>
+<ol>
+<li>安装数据库服务<code>postgresql</code>，用于存储索引数据。官方指定用这个数据库，但据我观察，用mysql等等也可以，没试过，有兴趣的可以自行尝试：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get -y install postgresql</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>安装<code>Diesel CLI</code>，rust的一个命令行工具，可以将表脚本等内容，导入到<code>postgresql</code>中，orm方式生成表等。说白了就是数据库脚本迁移工具。因为数据库脚本中有rust的代码，才让用该工具。<br>
+需要安装libpcap支持</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ubuntu需要安装libpcap-dev</span></span><br><span class="line">sudo apt install libpq-dev</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">macos中</span></span><br><span class="line">brew install libpq</span><br><span class="line">export PATH=&quot;/usr/local/opt/libpq/bin:$PATH&quot; &gt;&gt; ~/.bash_profile</span><br><span class="line">export LDFLAGS=&quot;-L/usr/local/opt/libpq/lib&quot;</span><br><span class="line">export CPPFLAGS=&quot;-I/usr/local/opt/libpq/include&quot;</span><br></pre></td></tr></table></figure>
+<p>安装diesel</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">指定postgres，减少安装没必要的依赖(否则mysql什么的都会要求你配置，执行会失败)</span></span><br><span class="line">cargo install diesel_cli --no-default-features --features postgres</span><br></pre></td></tr></table></figure>
+<p>编译sui-indexer，由于编译涉及到libpq命令行工具，这个交叉编译会搞的很复杂，因此需要在对应的系统上编译sui-indexer</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo build --release --bin sui-indexer</span><br></pre></td></tr></table></figure>
+<h2 id="3-部署开发网节点">3. 部署开发网节点</h2>
+<p>sui-node可以用来配置<code>全节点</code>和<code>验证节点</code>，涉及到如下端口号：</p>
+<table>
+<thead>
+<tr>
+<th><strong>protocol/port</strong></th>
+<th><strong>reachability</strong></th>
+<th><strong>purpose</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TCP/8080</strong></td>
+<td>inbound</td>
+<td>protocol/transaction interface</td>
+</tr>
+<tr>
+<td><strong>UDP/8081</strong></td>
+<td>inbound/outbound</td>
+<td>narwhal primary interface</td>
+</tr>
+<tr>
+<td><strong>UDP/8082</strong></td>
+<td>inbound/outbound</td>
+<td>narwhal primary interface</td>
+</tr>
+<tr>
+<td><strong>TCP/8083</strong></td>
+<td>localhost</td>
+<td>sui -&gt; narwhal interface</td>
+</tr>
+<tr>
+<td><strong>UDP/8084</strong></td>
+<td>inbound/outbound</td>
+<td>peer to peer state sync interface</td>
+</tr>
+<tr>
+<td><strong>TCP/8443</strong></td>
+<td>outbound</td>
+<td>metrics pushing</td>
+</tr>
+<tr>
+<td><strong>TCP/9184</strong></td>
+<td>localhost</td>
+<td>metrics scraping</td>
+</tr>
+</tbody>
+</table>
+<p>一般情况下，需要对外开放端口8080-8084，尤其验证节点，这些端口一定要开放</p>
+<h3 id="3-1-全节点启动">3.1 全节点启动</h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建目录</span></span><br><span class="line">cd ~</span><br><span class="line">mkdir bin</span><br><span class="line">cd bin</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">下载开发网的创世文件</span></span><br><span class="line">curl -fLJO https://github.com/MystenLabs/sui-genesis/raw/main/devnet/genesis.blob</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">在sui项目的根目录中执行如下</span></span><br><span class="line">cp crates/sui-config/data/fullnode-template.yaml fullnode.yaml</span><br><span class="line">mv ./fullnode.yaml ~/bin/</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">如果有需要，修改fullnode.yaml。其实也没啥可配置的，默认就行，顶多改改文件路径或者端口号</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">启动同步节点</span></span><br><span class="line">cd ~/bin/</span><br><span class="line">./sui-node --config-path fullnode.yaml</span><br></pre></td></tr></table></figure>
+<p>节点启动后，会自动进行同步，会有日志信息。日志的一些报错信息不用理会，同步文件不停的在增长，那就铁定一切正常了<br>
+耐心等待同步，直到同步结束</p>
+<h3 id="3-2-sui-indexer启动-可选">3.2 sui-indexer启动（可选）</h3>
+<p>这个就是用来提高rpc的访问速度的，我个人理解，如果需要搞dapp等，频繁交互的话，就部署上这个。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建账户</span></span><br><span class="line">su - postgres</span><br><span class="line">psql</span><br><span class="line">CREATE USER sui WITH PASSWORD &#x27;sui123&#x27;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建库</span></span><br><span class="line">diesel setup --database-url=postgres://sui:sui123@localhost:5432/sui</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">迁移db脚本</span></span><br><span class="line">diesel migration run --database-url=postgres://sui:sui123@localhost:5432/sui</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">执行sui-indexer</span></span><br><span class="line">./sui-indexer --db-url &quot;postgres://sui:sui123@localhost:5432/sui&quot; --rpc-client-url &quot;http://0.0.0.0:9000&quot; --rpc-server-port 9102 --client-metric-port 9180</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-1-postgres常规操作">3.2.1. postgres常规操作</h3>
+<p>\l --查看所有数据库<br>
+\c dbname  --切换数据库<br>
+\d --查看当前数据库下所有表<br>
+\d test --查看test表定义</p>
+<h3 id="3-3-检测节点是否正常同步">3.3 检测节点是否正常同步</h3>
+<p>使用如下两种方式检测块高度来判断是否开始同步：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">方式1</span></span><br><span class="line">curl --location --request POST http://127.0.0.1:9000/ --header &#x27;Content-Type: application/json&#x27; --data-raw &#x27;&#123; &quot;jsonrpc&quot;:&quot;2.0&quot;, &quot;method&quot;:&quot;sui_getTotalTransactionBlocks&quot;,&quot;id&quot;:1&#125;&#x27;; echo</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">方式2</span></span><br><span class="line">curl -q localhost:9184/metrics 2&gt;/dev/null |grep &#x27;^highest_synced_checkpoint&#x27;</span><br></pre></td></tr></table></figure>
+<p>反复执行几次，高度若有变化，则说明节点正在正常同步</p>
+<h3 id="3-3-1-第一种同步异常的处理方式">3.3.1 第一种同步异常的处理方式</h3>
+<p>目前我发现一种情况的解决方式，节点日志提示：<code>Sending fatal alert BadCertificate</code>，并且高度不变，也就是同步异常，此时解决方式是，在<code>fullnode.yml</code>中，加入如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">p2p-config:</span><br><span class="line">  seed-peers:</span><br><span class="line">   - address: &quot;/dns/sui-rpc-pt.testnet-pride.com/udp/8084&quot;</span><br><span class="line">     peer-id: 0b10182585ae4a305721b1823ea5a9c3ce7d6ac4b4a8ce35fe96d9914c8fcb73</span><br><span class="line">   - address: &quot;/dns/sui-rpc-pt2.testnet-pride.com/udp/8084&quot;</span><br><span class="line">     peer-id: bf45f2bd2bbc4c2d53d10c05c96085d4ef18688af04649d6e65e1ebad1716804</span><br><span class="line">   - address: &quot;/dns/sui-rpc-testnet.bartestnet.com/udp/8084&quot;</span><br><span class="line">   - address: &quot;/ip4/38.242.197.20/udp/8080&quot;</span><br><span class="line">   - address: &quot;/ip4/178.18.250.62/udp/8080&quot;</span><br><span class="line">   - address: &quot;/ip4/162.55.84.47/udp/8084&quot;</span><br><span class="line">   - address: &quot;/dns/wave-3.testnet.n1stake.com/udp/8084&quot;</span><br></pre></td></tr></table></figure>
+<p>该问题，其实就是无法访问到官方默认的节点，只好自己加入几个公开的别的节点来同步了</p>
+<h3 id="3-4-性能指标">3.4 性能指标</h3>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看所有指标</span></span><br><span class="line">curl -s http://localhost:9184/metrics</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">搜索特定指标：</span></span><br><span class="line">curl http://localhost:9184/metrics | grep &lt;METRIC&gt;</span><br></pre></td></tr></table></figure>
+<p>也可以在配置中加入如下内容，将实时指标信息发送到官方位置或者自定义位置：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">metrics:</span></span><br><span class="line">  <span class="attr">push-interval-seconds:</span> <span class="number">60</span></span><br><span class="line">  <span class="attr">push-url:</span> <span class="string">https://metrics-proxy.testnet.sui.io:8443/publish/metrics</span></span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://metrics.sui.io/public-dashboards/9b841d63c9bf43fe8acec4f0fa991f5e">官方测试网监控</a></p>
+<h2 id="5-部署验证节点">5. 部署验证节点</h2>
+<p>从我个人测试和文档阅读后的理解，验证节点其实就是在全节点的基础上的进一步配置，它拥有全节点的所有功能和数据，同时提供了验证功能。也就是说，部署验证节点，就没必要再去部署全节点。<br>
+当前测试环境，验证节点如下规则：</p>
+<ol>
+<li>刚开始只能部署成候选人节点</li>
+<li>当候选人节点质押达到3000万以上，就有机会成为验证人节点</li>
+<li>成为验证人后，质押池需要维持在2000万以上，如果质押低于1500万，会被踢出去</li>
+</ol>
+<h3 id="5-1-部署过程">5.1 部署过程</h3>
+<p>参考官方文档<a target="_blank" rel="noopener" href="https://github.com/MystenLabs/sui/blob/main/nre/validator_tool.md">申请验证人</a></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">生成必要文件，此时会生成validator.info、</span></span><br><span class="line">sui validator --client.config client.yml make-validator-info &quot;name&quot; &quot;description&quot; &quot;image-url&quot; &quot;project-url&quot; &quot;host-name&quot; &quot;gas_price&quot;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">申请候选人，需要足够的gas-budget，目前测试环境我发现需要设置至少50000000，根据返回提示，不够了就继续往上加</span></span><br><span class="line">sui validator --client.config client.yml become-candidate validator.info --gas-budget 50000000</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">质押资金足够后，当前测试网需要3000万，执行申请加入验证集</span></span><br><span class="line">sui validator --client.config join-committee</span><br></pre></td></tr></table></figure>
+<p>和前面的全节点部署方式类似，同样使用<code>sui-node</code>二进制文件<br>
+配置文件为<code>validator.yml</code>，官方位置<a target="_blank" rel="noopener" href="https://github.com/MystenLabs/sui/blob/main/nre/config/validator.yaml">validator</a>，也可从下载的源码的如下方式获取：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cp nre/nre/config/validator.yaml validator.yaml</span><br><span class="line">mv ./fullnode.yaml ~/sui/validator/bin/</span><br></pre></td></tr></table></figure>
+<p>我对默认的验证文件做了些改动，全部配置如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="comment"># 下文讲解这4个key作用，以及如何生成</span></span><br><span class="line"><span class="attr">protocol-key-pair:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./key-pairs/protocol.key</span></span><br><span class="line"><span class="attr">worker-key-pair:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./key-pairs/worker.key</span></span><br><span class="line"><span class="attr">account-key-pair:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./key-pairs/account.key</span></span><br><span class="line"><span class="attr">network-key-pair:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./key-pairs/network.key</span></span><br><span class="line"><span class="attr">db-path:</span> <span class="string">./db/authorities_db</span></span><br><span class="line"><span class="attr">network-address:</span> <span class="string">/ip4/0.0.0.0/tcp/8080/http</span></span><br><span class="line"><span class="attr">json-rpc-address:</span> <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span><span class="string">:9000</span></span><br><span class="line"><span class="attr">metrics-address:</span> <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span><span class="string">:9184</span></span><br><span class="line"><span class="attr">admin-interface-port:</span> <span class="number">1337</span></span><br><span class="line"><span class="attr">consensus-config:</span></span><br><span class="line">  <span class="attr">address:</span> <span class="string">/ip4/127.0.0.1/tcp/8083/http</span></span><br><span class="line">  <span class="attr">db-path:</span> <span class="string">./db/consensus_db</span></span><br><span class="line">  <span class="attr">internal-worker-address:</span> <span class="literal">null</span></span><br><span class="line">  <span class="attr">narwhal-config:</span></span><br><span class="line">    <span class="attr">header_num_of_batches_threshold:</span> <span class="number">32</span></span><br><span class="line">    <span class="attr">max_header_num_of_batches:</span> <span class="number">1000</span></span><br><span class="line">    <span class="attr">max_header_delay:</span> <span class="string">2000ms</span></span><br><span class="line">    <span class="attr">gc_depth:</span> <span class="number">50</span></span><br><span class="line">    <span class="attr">sync_retry_delay:</span> <span class="string">5000ms</span></span><br><span class="line">    <span class="attr">sync_retry_nodes:</span> <span class="number">3</span></span><br><span class="line">    <span class="attr">batch_size:</span> <span class="number">500000</span></span><br><span class="line">    <span class="attr">max_batch_delay:</span> <span class="string">100ms</span></span><br><span class="line">    <span class="attr">block_synchronizer:</span></span><br><span class="line">      <span class="attr">range_synchronize_timeout:</span> <span class="string">30000ms</span></span><br><span class="line">      <span class="attr">certificates_synchronize_timeout:</span> <span class="string">30000ms</span></span><br><span class="line">      <span class="attr">payload_synchronize_timeout:</span> <span class="string">30000ms</span></span><br><span class="line">      <span class="attr">payload_availability_timeout:</span> <span class="string">30000ms</span></span><br><span class="line">      <span class="attr">handler_certificate_deliver_timeout:</span> <span class="string">30000ms</span></span><br><span class="line">    <span class="attr">consensus_api_grpc:</span></span><br><span class="line">      <span class="attr">socket_addr:</span> <span class="string">/ip4/127.0.0.1/tcp/44579/http</span></span><br><span class="line">      <span class="attr">get_collections_timeout:</span> <span class="string">5000ms</span></span><br><span class="line">      <span class="attr">remove_collections_timeout:</span> <span class="string">5000ms</span></span><br><span class="line">    <span class="attr">max_concurrent_requests:</span> <span class="number">500000</span></span><br><span class="line">    <span class="attr">prometheus_metrics:</span></span><br><span class="line">      <span class="attr">socket_addr:</span> <span class="string">/ip4/127.0.0.1/tcp/33291/http</span></span><br><span class="line">    <span class="attr">network_admin_server:</span></span><br><span class="line">      <span class="attr">primary_network_admin_server_port:</span> <span class="number">41303</span></span><br><span class="line">      <span class="attr">worker_network_admin_server_base_port:</span> <span class="number">41669</span></span><br><span class="line"><span class="attr">enable-event-processing:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">p2p-config:</span></span><br><span class="line">  <span class="attr">listen-address:</span> <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span><span class="string">:8084</span></span><br><span class="line">  <span class="attr">external-address:</span> <span class="string">/dns/$HOSTNAME/udp/8084</span> <span class="comment"># UPDATE THIS</span></span><br><span class="line">  <span class="attr">anemo-config:</span></span><br><span class="line">    <span class="attr">max-concurrent-connections:</span> <span class="number">0</span></span><br><span class="line">  <span class="attr">seed-peers:</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">address:</span> <span class="string">&quot;/dns/sui-rpc-pt.testnet-pride.com/udp/8084&quot;</span></span><br><span class="line">     <span class="attr">peer-id:</span> <span class="string">0b10182585ae4a305721b1823ea5a9c3ce7d6ac4b4a8ce35fe96d9914c8fcb73</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">address:</span> <span class="string">&quot;/dns/sui-rpc-pt2.testnet-pride.com/udp/8084&quot;</span></span><br><span class="line">     <span class="attr">peer-id:</span> <span class="string">bf45f2bd2bbc4c2d53d10c05c96085d4ef18688af04649d6e65e1ebad1716804</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">address:</span> <span class="string">&quot;/dns/sui-rpc-testnet.bartestnet.com/udp/8084&quot;</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">address:</span> <span class="string">&quot;/ip4/38.242.197.20/udp/8080&quot;</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">address:</span> <span class="string">&quot;/ip4/178.18.250.62/udp/8080&quot;</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">address:</span> <span class="string">&quot;/ip4/162.55.84.47/udp/8084&quot;</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">address:</span> <span class="string">&quot;/dns/wave-3.testnet.n1stake.com/udp/8084&quot;</span></span><br><span class="line">  </span><br><span class="line"><span class="attr">genesis:</span></span><br><span class="line">  <span class="attr">genesis-file-location:</span> <span class="string">./config/genesis.blob</span></span><br><span class="line"><span class="attr">authority-store-pruning-config:</span></span><br><span class="line">  <span class="attr">num-latest-epoch-dbs-to-retain:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">epoch-db-pruning-period-secs:</span> <span class="number">3600</span></span><br><span class="line">  <span class="attr">num-epochs-to-retain:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">max-checkpoints-in-batch:</span> <span class="number">200</span></span><br><span class="line">  <span class="attr">max-transactions-in-batch:</span> <span class="number">1000</span></span><br><span class="line">  <span class="attr">use-range-deletion:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">end-of-epoch-broadcast-channel-capacity:</span> <span class="number">128</span></span><br><span class="line"><span class="attr">checkpoint-executor-config:</span></span><br><span class="line">  <span class="attr">checkpoint-execution-max-concurrency:</span> <span class="number">200</span></span><br><span class="line">  <span class="attr">local-execution-timeout-sec:</span> <span class="number">10</span></span><br><span class="line"><span class="attr">db-checkpoint-config:</span></span><br><span class="line">  <span class="attr">perform-db-checkpoints-at-epoch-end:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">indirect-objects-threshold:</span> <span class="number">18446744073709551615</span></span><br><span class="line"><span class="comment"># 因为网络受限问题，我把这个注销掉了。它默认会把节点情况发送给官方的监控网站</span></span><br><span class="line"><span class="comment"># metrics:</span></span><br><span class="line"><span class="comment">#  push-interval-seconds: 60</span></span><br><span class="line"><span class="comment">#  push-url: https://metrics-proxy.testnet.sui.io:8443/publish/metrics</span></span><br></pre></td></tr></table></figure>
+<p>启动：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./sui-node --config-path validator.yaml</span><br></pre></td></tr></table></figure>
+<h3 id="5-2-生成key文件">5.2 生成key文件</h3>
+<p>从上面<code>validator.yml</code>中可以看出，有4个key需要配置：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><strong>key</strong></th>
+<th style="text-align:center"><strong>scheme</strong></th>
+<th style="text-align:center"><strong>purpose</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><strong>protocol.key</strong></td>
+<td style="text-align:center">bls12381</td>
+<td style="text-align:center">transactions, narwhal consensus</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>account.key</strong></td>
+<td style="text-align:center">ed25519</td>
+<td style="text-align:center">controls assets for staking</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>network.key</strong></td>
+<td style="text-align:center">ed25519</td>
+<td style="text-align:center">narwhal primary, sui state sync</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>worker.key</strong></td>
+<td style="text-align:center">ed25519</td>
+<td style="text-align:center">validate narwhal workers</td>
+</tr>
+</tbody>
+</table>
+<p>目前有两种方式生成这4个key，一个是使用官方命令行工具<code>sui</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">生成bls12381</span></span><br><span class="line">sui keytool generate bls12381</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">生成ed25519</span></span><br><span class="line">sui keytool generate ed25519</span><br></pre></td></tr></table></figure>
+<p>其中ed25519就是sui钱包账户生成的标准方式，可以互通<br>
+另一种方式是使用官方的命令行工具<code>validator</code>，可查阅<a target="_blank" rel="noopener" href="https://github.com/MystenLabs/sui/blob/main/nre/validator_tool.md">官方文档</a>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">validator make-validator-info</span><br></pre></td></tr></table></figure>
+<h2 id="6-区块链浏览器查询">6. 区块链浏览器查询</h2>
+<p><a target="_blank" rel="noopener" href="https://explorer.sui.io/">https://explorer.sui.io/</a></p>
+<h2 id="7-总结">7. 总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/4e548a66/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Sui/" rel="tag">Sui</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/5158b3d6/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            sr25519概述和理解
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/ef694515/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">polkadot-apps的使用汇总</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

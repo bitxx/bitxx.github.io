@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>uniswap-v2实现过程分析 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/base/uniswap/uniswap-v2实现过程分析"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  uniswap-v2实现过程分析
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/e04fabc2/" class="article-date">
+  <time datetime="2022-11-17T08:11:53.000Z" itemprop="datePublished">2022-11-17</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/DeFi/">DeFi</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/DeFi/Uniswap-V2/">Uniswap-V2</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">3.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">12 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>uniswap v2的实现流程分为<a target="_blank" rel="noopener" href="https://github.com/Uniswap/v2-core">uniswapv2-core</a> 以及<a target="_blank" rel="noopener" href="https://github.com/Uniswap/v2-periphery">uniswap-v2-periphery</a> 。这两部分内容相对独立，第一部分是uniswapv2的实现核心，第二部分是外围合约，一般称为路由合约，前端通过该外围合约来与核心合约进行交互。</p>
+<span id="more"></span>
+<h2 id="1-概述">1. 概述</h2>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://github.com/Uniswap/v2-periphery">uniswap-v2-periphery</a> 作为外围合约，只是用来接收前端请求，做简单的数据处理后，转发给底层合约执行。逻辑很简单，自行查阅即可。
+<ol>
+<li>该项目中，主要关注这两个文件：<code>UniswapV2Router02.sol</code>和<code>UniswapV2Library.sol</code>，别的文件主要是用于兼容早期合约的，无需关注。
+<ol>
+<li><code>UniswapV2Library.sol</code>：工具库，可以从<a target="_blank" rel="noopener" href="https://github.com/Uniswap/v2-core">v2-core</a> 中读取并封装一些关键信息</li>
+<li><code>UniswapV2Router02.sol</code>：路由合约，用于衔接<a target="_blank" rel="noopener" href="https://github.com/Uniswap/v2-core">v2-core</a> 是与用户进行交互的入口，主要提供了添加流动性、移除流动性和兑换的系列接口，并提供了几个查询接口。属于该项目的最重要的一个文件</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/Uniswap/v2-core">uniswapv2-core</a> 是uniswap v2的底层核心合约：
+<ol>
+<li>协议费和手续费区分
+<ol>
+<li>协议费：表示平台抽成，需要手动在合约中开启，每次mint或burn后会触发</li>
+<li>手续费：每次swap，会保留的千分之三的交易费用。用户burn时，可以根据自己的份额连同该手续费提走。</li>
+</ol>
+</li>
+<li>主要分为以下几个部分：
+<ol>
+<li>池子初始化：<code>createPair</code></li>
+<li>增加池子流动性：<code>mint</code></li>
+<li>减少池子流动性：<code>burn</code></li>
+<li>交换：<code>swap</code>，也就是在满足x * y=k的情况下，如何从池子中获取其中一种token</li>
+<li>同步更新资产：<code>sync</code>，用于将池子账户的两种资产数量与池子合约中参数标记的数量保持一致</li>
+<li>从池子中提走多余的资产：<code>skim</code>，就是池子账户上两种资产数量如果大于池子合约中参数标记的两种资产数量，那就将多余的资产提取出来</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="2-概念解释">2. 概念解释</h2>
+<p>uniswap v2中涉及到的一些概念</p>
+<h3 id="2-1-恒定乘积做市模型-cpmm">2.1 恒定乘积做市模型(CPMM)</h3>
+<p>Uniswap-v2 使用了恒定乘积做市模型来实现自动化做市商。其计算步骤如下：</p>
+<ol>
+<li>甲在 Uniswap-v2 上提供了 1000 个 TokenA 和 100 个 TokenB 作为流动池，计乘数 Kab = 1000 * 100 = 100000</li>
+<li>乙想要在 Uniswap-v2 上使用 100 个 TokenA 兑换 TokenB，那么 Uniswap-v2 会首先计算交易后流动池会有 1000 + 100 = 1100 个 TokenA；为了维持 Kab 的不变，就需要 TokenB 的数量减少为 100000/1100 = 90.909… 。因此，Uniswap-v2 会给乙兑换出100 - 90.909 = 9.091 个 TokenB 。</li>
+<li>乙成功地使用 100 个 TokenA 在 Uniswap-v2 上兑换了 9.091 个 TokenB。可以预见的是，根据这套算法，乙需要兑换的 TokenA 越多，平均每个 TokenA 能兑换的 TokenB 就会越少。这就产生了滑点的概念。<br>
+<code>简化公式</code>：(TokenA余额 + 你出售的TokenA)*(TokenB余额 - 你获得的TokenB) = 常数K</li>
+</ol>
+<h3 id="2-2-滑点">2.2 滑点</h3>
+<p>滑点一般指预设成交价位与真实成交价位的偏差。恒定乘积AMM中同样存在滑点，一旦发生交易，池中资产的储备发生变化，资产实际的交易执行价就会发生变化，产生滑点。交易额越大，滑点越大，交易者的损失就越大。<br>
+根据恒定乘积，当用dx个x兑换dy个y时（忽略手续费），有：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x * y = k </span><br><span class="line">(x + dx)(y - dy) = k</span><br></pre></td></tr></table></figure>
+<p>可得，兑换量：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dy = (y * dx)/(x + dx)</span><br></pre></td></tr></table></figure>
+<p>则在实际兑换中，y相对x的单价为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dx / dy = (x + dx) / y</span><br></pre></td></tr></table></figure>
+<p>而兑换前，池中的y单价为x/y，那么y单价的滑点就产生了：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">p = (dx / dy) - (x/y) = dx / y</span><br></pre></td></tr></table></figure>
+<p>当然，这里总结出的滑点计算还只是通过AMM机制所算出的理论滑点，实际上滑点还会受很多因素影响，比如网络延时、区块确认等等。</p>
+<h3 id="2-3-无常损失">2.3 无常损失</h3>
+<p>无常损失的发生与AMM的机制有关，例如当BTC的价格为50 USDT时，假设用户A向流动性池中添加10 BTC与 500 USDT，此时用户A的总资产价值1000USDT。假设此时流动性池中总的流动性为100 BTC与 5000 USDT, 用户A占总流动性池的10%。<br>
+若BTC的价格上涨为 200 USDT，则根据恒定常数自动做市商的机制，总流动性池中资产的量变为50 BTC与10,000 USDT，若此时用户A撤出流动性，因为此前用户A提供的流动性占总流动性池的10%，则用户A成功取出 5 BTC与 1000 USDT，此时用户A的资产价值为2000 USDT(不计手续费收入)。<br>
+但若用户A不向流动性池提供流动性，而是单纯持有则用户A的资产应该价值 10*200 + 500 =2500 USDT，中间的损失为500USDT ，提供流动性与单纯持有之间相较产生的损失称为无常损失。无常损失的大小只与提供流动性时币对的价格(P0)与撤出流动性时币对价格(P1)的比值(P1/P0)有关。<br>
+但是用户可以通过提供流动性赚取交易的手续费，一定程度上可以弥补价格波动带来的无常损失。</p>
+<h2 id="3-通过案例理解交易和手续费的计算过程">3. 通过案例理解交易和手续费的计算过程</h2>
+<p>HelloSwap是一个独立的Uniswap交易所，它与其他交易所没有互联，该交易所的手续费比例为0.3.%，返还0.25%给LP，剩余0.05%给开发团队即协议抽成ϕ=1/6，有个资源池为LAM-MUT代币对，假设该资源池的持有者只有一个用户名称为Tom，如下图所示，即Tom占有LAM-MUT资源池的比例为100%，他初始添加流动性的比例为LAM:MUT = 4000:1000，分2次通过售出100LAM来买入MUT，请问Tom每次交易接收到的MUT是多少？Tom移除LAM-MUT 100%的流动性时，返回给Tom的LP手续费（UNI的个数）是多少？</p>
+<img src="/articles/e04fabc2/1.png" class="" title="uniswap v2 交易信息">
+<h3 id="3-1-每次接收到mut的计算过程">3.1 每次接收到MUT的计算过程</h3>
+<p><code>售出100LAM第1次后</code>：<br>
+Tom接收到的MUT为：1000-4000000/(4100-100<em>0.003)=24.3188526<br>
+MUT流动量：4000000/(4100-100</em>0.003)=975.6811474<br>
+<code>注</code>：4000000为当前x和y各自的流动性相乘；1000为售出LAM前，池中MUT的流动量；100为当前售出的LAM数量；4100为售出LAM后，LAM在池中的流动量；0.003为总的手续费比例</p>
+<p><code>售出100LAM第2次后</code>：<br>
+计算结果，与第1次的计算方式一模一样</p>
+<p>想要补充说明的是，手续费是从你要出售的token中按比例0.003扣除的。计算手续费的合约代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">uint amount0In = balance0 &gt; _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;</span><br><span class="line">uint amount1In = balance1 &gt; _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;</span><br><span class="line">require(amount0In &gt; 0 || amount1In &gt; 0, &#x27;UniswapV2: INSUFFICIENT_INPUT_AMOUNT&#x27;);</span><br><span class="line">&#123; // scope for reserve&#123;0,1&#125;Adjusted, avoids stack too deep errors</span><br><span class="line">uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(3));  //减去手续费的数额，手续费是池子剩余余额的0.3%</span><br><span class="line">uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(3));</span><br><span class="line">require(balance0Adjusted.mul(balance1Adjusted) &gt;= uint(_reserve0).mul(_reserve1).mul(1000**2), &#x27;UniswapV2: K&#x27;); //x*y=k，交易后的k要不小于交易前的k</span><br><span class="line">&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>可知，<code>swap</code>时，并没有把手续费分发给管理员或者搭建池子的人。而是保留在了池子中。具体的手续费计算，需要关注<code>_mintFee</code>方法，里面涉及到一系列的公式，比较复杂。下面章节中详细解释</p>
+<h3 id="3-2-每次接收到mut后手续费的计算">3.2 每次接收到MUT后手续费的计算</h3>
+<p>图中可知，0.003的手续费，最终分配给了<code>协议费账户(uni官方)</code>和<code>LP手续费账户(追加流动性用户)</code>。需要说明：</p>
+<ol>
+<li>每次swap，总手续费都会累加，并不分发（不分发是因为swap调用频次高，若每次都分发，gas扛不住。真正的分发都放在了<code>mint</code>或<code>burn</code>中，低频方法）</li>
+<li><code>mint</code>或<code>burn</code>时，都会执行<code>_mintFee</code>方法，通过一系列的数学计算，将属于官方的手续费（LP）转移至官方指定账户。</li>
+<li><code>mint</code>时，也就是客户追加了流动性。此时根据客户追加的各token比例，折算出对应的LP给到客户账户(此LP中包系统给的手续费，就是从累加的总手续费按相同比例折算的)。</li>
+<li>这会儿的手续费是LP代币，分别在各自账户上。需要折现时，将LP转入合约账户，然后合约操作<code>burn</code>时，会将LP按比例折合成对应的两种token，分发给<code>burn</code>指定的账户。</li>
+</ol>
+<p><code>_mintFee</code>会划转1/6手续费(LP)到官方账户，先看看该方法代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) &#123;</span><br><span class="line">    address feeTo = IUniswapV2Factory(factory).feeTo();  //查看有没有设置手续费账户</span><br><span class="line">    feeOn = feeTo != address(0);</span><br><span class="line">    uint _kLast = kLast; // gas savings</span><br><span class="line">    if (feeOn) &#123;</span><br><span class="line">        if (_kLast != 0) &#123;</span><br><span class="line">            uint rootK = Math.sqrt(uint(_reserve0).mul(_reserve1));</span><br><span class="line">            uint rootKLast = Math.sqrt(_kLast);</span><br><span class="line">            if (rootK &gt; rootKLast) &#123;</span><br><span class="line">                uint numerator = totalSupply.mul(rootK.sub(rootKLast));</span><br><span class="line">                uint denominator = rootK.mul(5).add(rootKLast);</span><br><span class="line">                uint liquidity = numerator / denominator;</span><br><span class="line">                if (liquidity &gt; 0) _mint(feeTo, liquidity);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; else if (_kLast != 0) &#123;</span><br><span class="line">        kLast = 0;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>mint 的数量 为什么是 (rootK - rootKLast)/(5 倍 rootK + 1 倍 rootKLast) 而不是 (rootK - rootKLast)/6 倍 rootKLast ? 通过下图, 看看要增发多少 lp, 使得 lp 分到的财富刚好是增量的 1/6:</p>
+<img src="/articles/e04fabc2/2.png" class="" title="模拟计算手续费">
+<p>如上图所示, 为了得到新增财富的 1/6, 需要增发的 lp 应该满足:</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lp/lp_supply = (∆/6) / [(∆5/6) + rootKLast ]</span><br></pre></td></tr></table></figure>
+<p>这里 <code>∆ = rootK - rootKLast</code> 解出 ：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lp = lp_supply * ∆ / (5rootK + rootKLast)</span><br></pre></td></tr></table></figure>
+<p>与源代码的计算方法一致, 证实了 Uniswap 收取的协议手续费就是总手续费的 1/6.</p>
+<p>需要知道每次池子LP的总量，图中没有提供，但思路基本一致。直接套用上面理论即可计算出官方手续费。网上还有另一种方式计算手续费，根据白皮书公式给的，看着有点绕，有兴趣可以看看：<a target="_blank" rel="noopener" href="https://blog.csdn.net/sanqima/article/details/109667469">Uniswap V2里的手续费换算</a></p>
+<h2 id="6-价格预言机">6. 价格预言机</h2>
+<p>这个没有具体去研究，只记录下，在<code>_update</code>方法，会更新累积价格，用于具体的预言机计算，有兴趣的可以去研究下：<br>
+price0CumulativeLast和price1CumulativeLast的价格累加</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">// update reserves and, on the first call per block, price accumulators</span><br><span class="line">function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private &#123;</span><br><span class="line">    ...</span><br><span class="line">    // 时间戳是uint256,只需要保留最低的32位即可，但不可直接强转。</span><br><span class="line">    uint32 blockTimestamp = uint32(block.timestamp % 2**32);</span><br><span class="line">    uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired</span><br><span class="line">    if (timeElapsed &gt; 0 &amp;&amp; _reserve0 != 0 &amp;&amp; _reserve1 != 0) &#123;</span><br><span class="line">        // 计算时间加权的累计价格，256位中，前112位用来存整数，后112位用来存小数，多的32位用来存溢出的值</span><br><span class="line">        // * never overflows, and + overflow is desired</span><br><span class="line">        price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;</span><br><span class="line">        price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    blockTimestampLast = blockTimestamp;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="5-uniswap-v2缺点">5. uniswap v2缺点</h2>
+<ol>
+<li>资金利用率低</li>
+<li>用户承担无常损失的高风险</li>
+<li>用户得到的手续费低</li>
+<li>因此，出来了<code>uniswap v3</code></li>
+</ol>
+<p>关于<code>资金利用率</code>的问题，这里解释下：<br>
+假设 ETH/DAI 交易对的实时价格为 1500 DAI/ETH，交易对的流动性池中共有资金：4500 DAI 和 3 ETH，根据 x⋅y=k，可以算出池内的 k 值：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">k= 4500×3 = 13500</span><br></pre></td></tr></table></figure>
+<p>假设 x 表示 DAI，y 表示 ETH，即初始阶段 <code>x1=4500 , y1=3</code>，当价格下降到 1300 DAI/ETH 时：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">x2⋅y2=13500</span><br><span class="line">x2 / y2=1300</span><br><span class="line"></span><br><span class="line"># 得到：</span><br><span class="line">x2=4192.54</span><br><span class="line">y2=3.22</span><br></pre></td></tr></table></figure>
+<p>资金利用率为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Δx = x1 - x2 </span><br><span class="line">Δx / x1 = 6.84%</span><br></pre></td></tr></table></figure>
+<p>同样的计算方式，当价格变为 2200 DAI/ETH 时，资金利用率约为 <code>21.45%</code>.<br>
+也就是说，在大部分的时间内池子中的资金利用与低于 25%. 这个问题对于稳定币池来说更加严重。</p>
+<p>通俗来说，池子只是消耗了<code>Δx</code>资金，如果价格不会跌破1300，则剩下的x2资金永远不会用到，理论上讲，理想状态下，池子里只需要有<code>Δx</code>资金量就够了</p>
+<p>因为资金使用率是v2最大的一个问题，如果不理解上面说的，这里再进一步解释下：</p>
+<img src="/articles/e04fabc2/3.png" class="" title="uniswap v2 资金使用率">
+<p>上图为资金池中的<code>x/y</code>(这比值其实表示两种币的币价，x对y的价格)的量变化曲线。资金池中的当前价格在c点，并且假设会在a价格点和b价格点之间波动。从c点向a点滑动，消耗最大<code>y_real</code>，从c点向b点滑动，消耗最大为<code>x_real</code>。也就是说，当前价格c点，在a点和b点之间震荡的话，最大只需要消耗<code>x_real</code>和<code>y_real</code>。理论上只要提供<code>x_real</code>和<code>y_real</code>就足够了。而事实上，如上图所示，在价格c点，分别提供了大于<code>x_real</code>和<code>y_real</code>的x和y。明显可以看出，<code>x-x_real</code>和<code>y-y_real</code>的资金在这种情况下是永远用不上的，也就称为闲置资金。<br>
+在这种情况下，资金利用率为<code>x_real/x</code>或者<code>y_real/y</code>。如果价格波动非常小的话，资金利用率是非常低的。</p>
+<h2 id="4-总结">4. 总结</h2>
+<p>按我对源码的解读，核心内容，一个是计算兑换收益，一个是计算手续费。<br>
+技术上，一个是结构分层设计，一个是为了节省gas消耗，而设计的手续费的分发实现。<br>
+想要更好的理解uniswap v2，测试环境部署一个，然后来来回回反复操作理解吧。</p>
+ 
+      <!-- reward -->
+      
+      <div id="reword-out">
+        <div id="reward-btn">
+          Donate
+        </div>
+      </div>
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>Copyright： </strong>
+          
+          Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source.
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/e04fabc2/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/DeFi/" rel="tag">DeFi</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Uniswap-V2/" rel="tag">Uniswap-V2</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/8a4955c1/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            hardhat的部署以及基本使用
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/af47b345/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">ink合约-psp37</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>

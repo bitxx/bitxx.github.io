@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-Hans">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta name="description" content="未来已来，静待花开" />
+      
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>substrate进阶(5)-不同pallet之间的使用 |  链路漫谈</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+<script>
+var _hmt = _hmt || [];
+(function() {
+	var hm = document.createElement("script");
+	hm.src = "https://hm.baidu.com/hm.js?8ec893a3c95ef1a03c06f00bad8b654d";
+	var s = document.getElementsByTagName("script")[0]; 
+	s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    <link href="https://cdn.bootcss.com/KaTeX/0.11.1/katex.min.css" rel="stylesheet" /></head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-blockchain/substrate/pallet进阶/pallet进阶(5)-不同pallet之间的使用"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  substrate进阶(5)-不同pallet之间的使用
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/90c002dd/" class="article-date">
+  <time datetime="2022-09-06T03:21:12.000Z" itemprop="datePublished">2022-09-06</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/">Substrate</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Substrate/pallet%E8%BF%9B%E9%98%B6/">pallet进阶</a>
+  </div>
+  
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> Word count:</span>
+            <span class="post-count">1.6k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> Reading time≈</span>
+            <span class="post-count">8 min</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>不同pallet之间的使用</p>
+<span id="more"></span>
+<h2 id="1-概述">1. 概述</h2>
+<p>多个pallet之间的调用，主要有以下几种情况：</p>
+<ol>
+<li>调用现有的pallet：即在pallet的config中定义类型，然后runtime中使用时指定这个类型为frame中指定某个现成的pallet；</li>
+<li>调用自定义的pallet：即在pallet的config中定义类型，然后runtime中使用时指定这个类型为frame中指定某个自定义的pallet；</li>
+<li>封装和扩展现有的pallet。</li>
+</ol>
+<h2 id="2-调用现有的pallet">2. 调用现有的pallet</h2>
+<p>runtime/lib.rs中:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//定义：</span></span><br><span class="line">construct_runtime!() &#123;</span><br><span class="line">  Balances: pallet_balances,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//对应Config中直接引入：</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_contracts</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Currency</span> = Balances;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-调用自定义的pallet">3. 调用自定义的pallet</h2>
+<p>通过案例来说明：<code>pallet2</code>调用<code>pallet1</code>：</p>
+<ol>
+<li>pallet1作为被调用者，先实现：<br>
+先定义一个<code>trait.rs</code>文件：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">StorageInterface</span>&#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Value</span>;</span><br><span class="line">  <span class="keyword">fn</span> <span class="title function_">get_param</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>::Value;</span><br><span class="line">  <span class="keyword">fn</span> <span class="title function_">set_param</span>(v: <span class="keyword">Self</span>::Value);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>lib.rs中内容：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">use</span> pallet::*;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">use</span> traits::StorageInterface;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> traits;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[frame_support::pallet]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> pallet &#123;</span><br><span class="line">  <span class="keyword">use</span> codec::Codec;</span><br><span class="line">  <span class="keyword">use</span> frame_support::&#123;</span><br><span class="line">    pallet_prelude::*, </span><br><span class="line">    sp_runtime::traits::AtLeast32BitUnsigned, </span><br><span class="line">    sp_std::fmt::<span class="built_in">Debug</span>,</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="keyword">use</span> frame_system::pallet_prelude::*;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::pallet]</span></span><br><span class="line">  <span class="meta">#[pallet::generate_store(pub(super) trait Store)]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pallet</span>&lt;T&gt;(_);</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::config]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: frame_system::Config &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Event</span>: <span class="built_in">From</span>&lt;Event&lt;<span class="keyword">Self</span>&gt;&gt; </span><br><span class="line">      + IsType&lt;&lt;<span class="keyword">Self</span> <span class="keyword">as</span> frame_system::Config&gt;::Event&gt;;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Value</span>: Member</span><br><span class="line">      + Parameter</span><br><span class="line">      + AtLeast32BitUnsigned</span><br><span class="line">      + Codec</span><br><span class="line">      + <span class="built_in">From</span>&lt;<span class="type">u32</span>&gt;</span><br><span class="line">      + <span class="built_in">Into</span>&lt;<span class="type">u32</span>&gt;</span><br><span class="line">      + <span class="built_in">Copy</span></span><br><span class="line">      + <span class="built_in">Debug</span></span><br><span class="line">      + <span class="built_in">Default</span></span><br><span class="line">      + MaxEncodedLen</span><br><span class="line">      + MaybeSerializeDeserialize;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::storage]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">type</span> <span class="title class_">MyValue</span>&lt;T: Config&gt; = </span><br><span class="line">       StorageValue&lt;_, T::Value, ValueQuery&gt;;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::event]</span></span><br><span class="line">  <span class="meta">#[pallet::generate_deposit(pub(super) fn deposit_event)]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Event</span>&lt;T: Config&gt; &#123;</span><br><span class="line">    FunctionCall,</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::call]</span></span><br><span class="line">  <span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="meta">#[pallet::weight(0)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">my_function</span>(</span><br><span class="line">      origin: OriginFor&lt;T&gt;,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> DispatchResultWithPostInfo &#123;</span><br><span class="line">      <span class="title function_ invoke__">ensure_signed</span>(origin)?;</span><br><span class="line">      log::info!(target: <span class="string">&quot;storage pallet1&quot;</span>, <span class="string">&quot;my function!&quot;</span>);</span><br><span class="line">      <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::FunctionCall);</span><br><span class="line">      <span class="title function_ invoke__">Ok</span>(().<span class="title function_ invoke__">into</span>())</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注意此处：我们为pallet实现了前面定义的trait StorageInterface.</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Config&gt; StorageInterface <span class="keyword">for</span> <span class="title class_">Pallet</span>&lt;T&gt; &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Value</span> = T::Value;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">fn</span> <span class="title function_">get_param</span>() <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>::Value &#123;</span><br><span class="line">    MyValue::&lt;T&gt;::<span class="title function_ invoke__">get</span>()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">fn</span> <span class="title function_">set_param</span>(v: <span class="keyword">Self</span>::Value) &#123;</span><br><span class="line">    MyValue::&lt;T&gt;::<span class="title function_ invoke__">put</span>(v);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>pallet1做为调用者：</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">use</span> pallet::*;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[frame_support::pallet]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> pallet &#123;</span><br><span class="line">  <span class="keyword">use</span> codec::Codec;</span><br><span class="line">  <span class="keyword">use</span> frame_support::&#123;</span><br><span class="line">    pallet_prelude::*, </span><br><span class="line">    sp_runtime::traits::AtLeast32BitUnsigned, </span><br><span class="line">    sp_std::fmt::<span class="built_in">Debug</span>,</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="keyword">use</span> frame_system::pallet_prelude::*;</span><br><span class="line">  <span class="comment">//引入pallet1中定义的trait</span></span><br><span class="line">  <span class="keyword">use</span> pallet1::traits::StorageInterface;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::pallet]</span></span><br><span class="line">  <span class="meta">#[pallet::generate_store(pub(super) trait Store)]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pallet</span>&lt;T&gt;(_);</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::config]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: frame_system::Config &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Event</span>: <span class="built_in">From</span>&lt;Event&lt;<span class="keyword">Self</span>&gt;&gt; </span><br><span class="line">      + IsType&lt;&lt;<span class="keyword">Self</span> <span class="keyword">as</span> frame_system::Config&gt;::Event&gt;;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Value</span>: Member</span><br><span class="line">      + Parameter</span><br><span class="line">      + AtLeast32BitUnsigned</span><br><span class="line">      + Codec</span><br><span class="line">      + <span class="built_in">From</span>&lt;<span class="type">u32</span>&gt;</span><br><span class="line">      + <span class="built_in">Into</span>&lt;<span class="type">u32</span>&gt;</span><br><span class="line">      + <span class="built_in">Copy</span></span><br><span class="line">      + <span class="built_in">Debug</span></span><br><span class="line">      + <span class="built_in">Default</span></span><br><span class="line">      + MaxEncodedLen</span><br><span class="line">      + MaybeSerializeDeserialize;</span><br><span class="line">    <span class="comment">//定义了MyStorage类型，要求其实现trait StorageInterface</span></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">MyStorage</span>: StorageInterface&lt;Value = <span class="keyword">Self</span>::Value&gt;; </span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::event]</span></span><br><span class="line">  <span class="meta">#[pallet::generate_deposit(pub(super) fn deposit_event)]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Event</span>&lt;T: Config&gt; &#123;</span><br><span class="line">    StoreEvent,</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::call]</span></span><br><span class="line">  <span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt; &#123;</span><br><span class="line">    <span class="meta">#[pallet::weight(0)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">storage_value</span>(</span><br><span class="line">      origin: OriginFor&lt;T&gt;,</span><br><span class="line">      value: T::Value, </span><br><span class="line">    ) <span class="punctuation">-&gt;</span> DispatchResultWithPostInfo &#123;</span><br><span class="line">      <span class="title function_ invoke__">ensure_signed</span>(origin)?;</span><br><span class="line"></span><br><span class="line">      T::MyStorage::<span class="title function_ invoke__">set_param</span>(value);</span><br><span class="line"></span><br><span class="line">   <span class="comment">//使用trait StorageInterface中的函数</span></span><br><span class="line">      <span class="keyword">let</span> <span class="variable">v</span> = T::MyStorage::<span class="title function_ invoke__">get_param</span>();</span><br><span class="line">      log::info!(target: <span class="string">&quot;pallet1&quot;</span>, </span><br><span class="line">           <span class="string">&quot;Value get from storage is: &#123;:?&#125;&quot;</span>, v);</span><br><span class="line">      <span class="keyword">Self</span>::<span class="title function_ invoke__">deposit_event</span>(Event::StoreEvent);</span><br><span class="line">      <span class="title function_ invoke__">Ok</span>(().<span class="title function_ invoke__">into</span>())</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在runtime/src/lib.rs中加入相关引用：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//添加下面4行</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet2</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Value</span> = <span class="type">u32</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//添加下面5行</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet2</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Value</span> = <span class="type">u32</span>;</span><br><span class="line">  <span class="comment">//调用pallet2  </span></span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">MyStorage</span> = Pallet2; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">construct_runtime!(</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Runtime</span> <span class="keyword">where</span></span><br><span class="line">    Block = Block,</span><br><span class="line">    NodeBlock = opaque::Block,</span><br><span class="line">    UncheckedExtrinsic = UncheckedExtrinsic</span><br><span class="line">  &#123;</span><br><span class="line">    System: frame_system,</span><br><span class="line">  ...</span><br><span class="line">  <span class="comment">//添加下面两行</span></span><br><span class="line">    Pallet2: pallet2, </span><br><span class="line">    Pallet1: pallet1,</span><br><span class="line">  &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>别的非重要步骤这里就不展示了</p>
+<h2 id="4-封装和扩展现有的pallet">4. 封装和扩展现有的pallet</h2>
+<p>为了更直观解释，这里使用如下案例：<br>
+使用substrate提供的contracts pallet，然后对其中的功能进行封装。封装中，将contracts pallet的call函数封装成sudo_call，即需要root权限才能调用。同时，在runtime中加载contracts时，去掉直接调用contracts函数的方式。<br>
+也就是说，对外只暴露封装后pallet的方法</p>
+<p>整个方式分成两大步骤：</p>
+<ol>
+<li>编写extend-pallet;</li>
+<li>在runtime配置extend-pallet和contracts pallet。</li>
+</ol>
+<p>备注：这表示，最终在页面上只能看到extend-pallet对外暴露的方法，而contracts pallet的方法不再对外展示。</p>
+<h3 id="4-1-编写extend-pallet">4.1 编写extend-pallet</h3>
+<p>extend-pallet的lib.rs中：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> codec::&#123;Encode, HasCompact&#125;;</span><br><span class="line"><span class="keyword">use</span> frame_support::traits::Currency;</span><br><span class="line"><span class="keyword">use</span> scale_info::TypeInfo;</span><br><span class="line"><span class="keyword">use</span> sp_core::crypto::UncheckedFrom;</span><br><span class="line"><span class="keyword">use</span> sp_runtime::traits::StaticLookup;</span><br><span class="line"><span class="keyword">use</span> sp_std::&#123;fmt::<span class="built_in">Debug</span>, prelude::*&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> <span class="title class_">BalanceOf</span>&lt;T&gt; = </span><br><span class="line">  &lt;&lt;T <span class="keyword">as</span> pallet_contracts::Config&gt;::Currency <span class="keyword">as</span> Currency&lt;</span><br><span class="line">  &lt;T <span class="keyword">as</span> frame_system::Config&gt;::AccountId,&gt;&gt;::Balance;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">use</span> pallet::*;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[frame_support::pallet]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> pallet &#123;</span><br><span class="line">  <span class="keyword">use</span> super::*;</span><br><span class="line">  <span class="keyword">use</span> frame_support::pallet_prelude::*;</span><br><span class="line">  <span class="keyword">use</span> frame_system::pallet_prelude::*;</span><br><span class="line"></span><br><span class="line">  <span class="meta">#[pallet::pallet]</span></span><br><span class="line">  <span class="meta">#[pallet::generate_store(pub(super) trait Store)]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Pallet</span>&lt;T&gt;(_);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 重点关注1：封装pallet的Config需要集成被封装pallet的Config</span></span><br><span class="line">  <span class="meta">#[pallet::config]</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Config</span>: pallet_contracts::Config + frame_system::Config &#123;&#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 重点关注2：对主要pallet-contracts的call函数进行封装，在这部分里面，添加判断root权限的语句，然后直接调用pallet-contracts的call函数。</span></span><br><span class="line">  <span class="meta">#[pallet::call]</span></span><br><span class="line">  <span class="keyword">impl</span>&lt;T: Config&gt; Pallet&lt;T&gt;</span><br><span class="line">  <span class="keyword">where</span></span><br><span class="line">    T::AccountId: UncheckedFrom&lt;T::Hash&gt;,</span><br><span class="line">    T::AccountId: <span class="built_in">AsRef</span>&lt;[<span class="type">u8</span>]&gt;,</span><br><span class="line">    &lt;BalanceOf&lt;T&gt; <span class="keyword">as</span> HasCompact&gt;::Type: <span class="built_in">Clone</span> </span><br><span class="line">     + <span class="built_in">Eq</span> + <span class="built_in">PartialEq</span> + <span class="built_in">Debug</span> + TypeInfo + Encode,</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="meta">#[pallet::weight(0)]</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">sudo_call</span>(</span><br><span class="line">      origin: OriginFor&lt;T&gt;,</span><br><span class="line">      dest: &lt;T::Lookup <span class="keyword">as</span> StaticLookup&gt;::Source,</span><br><span class="line">      <span class="meta">#[pallet::compact]</span> value: BalanceOf&lt;T&gt;,</span><br><span class="line">      <span class="meta">#[pallet::compact]</span> gas_limit: Weight,</span><br><span class="line">      storage_deposit_limit: <span class="type">Option</span>&lt;&lt;BalanceOf&lt;T&gt; </span><br><span class="line">           <span class="keyword">as</span> codec::HasCompact&gt;::Type&gt;,</span><br><span class="line">      data: <span class="type">Vec</span>&lt;<span class="type">u8</span>&gt;,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> DispatchResultWithPostInfo &#123;</span><br><span class="line">      <span class="comment">//添加下面这行，用于判断是否是root权限</span></span><br><span class="line">      <span class="title function_ invoke__">ensure_root</span>(origin.<span class="title function_ invoke__">clone</span>())?;</span><br><span class="line"></span><br><span class="line">      <span class="comment">//直接调用pallet-contracts的call函数</span></span><br><span class="line">      pallet_contracts::Pallet::&lt;T&gt;::<span class="title function_ invoke__">call</span>(</span><br><span class="line">        origin,</span><br><span class="line">        dest,</span><br><span class="line">        value,</span><br><span class="line">        gas_limit,</span><br><span class="line">        storage_deposit_limit,</span><br><span class="line">        data,</span><br><span class="line">      )</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="4-2-在runtime配置extend-pallet和contracts-pallet">4.2 在runtime配置extend-pallet和contracts pallet</h3>
+<p>将extend-pallet和contracts pallet加载到runtime中，需要修改runtime/src/lib.rs如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1、配置Contracts pallet</span></span><br><span class="line"><span class="keyword">use</span> pallet_contracts::weights::WeightInfo;</span><br><span class="line"><span class="keyword">const</span> AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::<span class="title function_ invoke__">from_percent</span>(<span class="number">10</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">mod</span> currency &#123;</span><br><span class="line">  <span class="keyword">use</span> node_primitives::Balance;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">const</span> MILLICENTS: Balance = <span class="number">1_000_000_000</span>;</span><br><span class="line">  <span class="comment">// assume this is worth about a cent.</span></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">const</span> CENTS: Balance = <span class="number">1_000</span> * MILLICENTS; </span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">const</span> DOLLARS: Balance = <span class="number">100</span> * CENTS;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">const</span> <span class="keyword">fn</span> <span class="title function_">deposit</span>(items: <span class="type">u32</span>, bytes: <span class="type">u32</span>) <span class="punctuation">-&gt;</span> Balance &#123;</span><br><span class="line">    items <span class="keyword">as</span> Balance * <span class="number">15</span> * CENTS + (bytes <span class="keyword">as</span> Balance) * <span class="number">6</span> * CENTS</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">parameter_types! &#123;</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">const</span> DepositPerItem: Balance = currency::<span class="title function_ invoke__">deposit</span>(<span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">const</span> DepositPerByte: Balance = currency::<span class="title function_ invoke__">deposit</span>(<span class="number">0</span>, <span class="number">1</span>);</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">const</span> MaxValueSize: <span class="type">u32</span> = <span class="number">16</span> * <span class="number">1024</span>;</span><br><span class="line">  <span class="keyword">pub</span> DeletionWeightLimit: Weight = AVERAGE_ON_INITIALIZE_RATIO *</span><br><span class="line">    BlockWeights::<span class="title function_ invoke__">get</span>().max_block;</span><br><span class="line">  <span class="keyword">pub</span> DeletionQueueDepth: <span class="type">u32</span> = ((DeletionWeightLimit::<span class="title function_ invoke__">get</span>() / (</span><br><span class="line">      &lt;Runtime <span class="keyword">as</span> pallet_contracts::Config&gt;::WeightInfo::<span class="title function_ invoke__">on_initialize_per_queue_item</span>(<span class="number">1</span>) -</span><br><span class="line">      &lt;Runtime <span class="keyword">as</span> pallet_contracts::Config&gt;::WeightInfo::<span class="title function_ invoke__">on_initialize_per_queue_item</span>(<span class="number">0</span>)</span><br><span class="line">    )) / <span class="number">5</span>) <span class="keyword">as</span> <span class="type">u32</span>;</span><br><span class="line">  <span class="keyword">pub</span> Schedule: pallet_contracts::Schedule&lt;Runtime&gt; = <span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_contracts</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Time</span> = Timestamp;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Randomness</span> = RandomnessCollectiveFlip;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Currency</span> = Balances;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Event</span> = Event;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Call</span> = Call;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">CallFilter</span> = Nothing;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">DepositPerItem</span> = DepositPerItem;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">DepositPerByte</span> = DepositPerByte;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">CallStack</span> = [pallet_contracts::Frame&lt;<span class="keyword">Self</span>&gt;; <span class="number">31</span>];</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">WeightPrice</span> = pallet_transaction_payment::Pallet&lt;<span class="keyword">Self</span>&gt;;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">WeightInfo</span> = pallet_contracts::weights::SubstrateWeight&lt;<span class="keyword">Self</span>&gt;;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">ChainExtension</span> = ();</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">DeletionQueueDepth</span> = DeletionQueueDepth;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">DeletionWeightLimit</span> = DeletionWeightLimit;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">Schedule</span> = Schedule;</span><br><span class="line">  <span class="keyword">type</span> <span class="title class_">AddressGenerator</span> = pallet_contracts::DefaultAddressGenerator;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2、配置extends pallet</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">pallet_extend_pallet</span>::Config <span class="keyword">for</span> <span class="title class_">Runtime</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3、在runtime中定义两个pallet</span></span><br><span class="line">construct_runtime!(</span><br><span class="line">  <span class="keyword">pub</span> <span class="keyword">enum</span> <span class="title class_">Runtime</span> <span class="keyword">where</span></span><br><span class="line">    Block = Block,</span><br><span class="line">    NodeBlock = opaque::Block,</span><br><span class="line">    UncheckedExtrinsic = UncheckedExtrinsic</span><br><span class="line">  &#123;</span><br><span class="line">    System: frame_system,</span><br><span class="line">          <span class="comment">//...</span></span><br><span class="line">    <span class="comment">// 注意下面两行的区别: 一定要去掉Call</span></span><br><span class="line">    <span class="comment">// 将它的Call部分去掉了，这也就表示我们在runtime层面没有对外暴露Contracts的调度函数接口，这样用户只能使用ExtendContracts提供的sudo_call函数，而不能使用Contracts的调度函数。 </span></span><br><span class="line">    <span class="comment">// Contracts: pallet_contracts::&#123;Pallet, Call, Storage, Event&lt;T&gt;&#125;,</span></span><br><span class="line">    Contracts: pallet_contracts::&#123;Pallet, Storage, Event&lt;T&gt;&#125;,</span><br><span class="line">    ExtendContracts: pallet_extend_pallet,</span><br><span class="line">  &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<h2 id="总结">总结</h2>
+<p>本文编辑完毕</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/90c002dd/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Substrate/" rel="tag">Substrate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+      <a href="/articles/10dc8319/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            pallet进阶(6)-调试
+          
+        </div>
+      </a>
+    
+    
+      <a href="/articles/6fdf0de9/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">substrate进阶(4)-pallet结构之调度函数、钩子函数、Config</div>
+      </a>
+    
+  </nav>
+
+   
+<!-- valine评论 -->
+<div id="vcomments-box">
+  <div id="vcomments"></div>
+</div>
+<script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+<script src="https://cdn.staticfile.org/valine/1.4.16/Valine.min.js"></script>
+<script>
+  new Valine({
+    el: "#vcomments",
+    app_id: "gdw0hVSwW3l6KgEMulSAc9Rx-gzGzoHsz",
+    app_key: "M4iiVXe0CuXWQEKuyIzWWDMh",
+    path: window.location.pathname,
+    avatar: "monsterid",
+    placeholder: "给我的文章加点评论吧~",
+    recordIP: true,
+  });
+  const infoEle = document.querySelector("#vcomments .info");
+  if (infoEle && infoEle.childNodes && infoEle.childNodes.length > 0) {
+    infoEle.childNodes.forEach(function (item) {
+      item.parentNode.removeChild(item);
+    });
+  }
+</script>
+<style>
+  #vcomments-box {
+    padding: 5px 30px;
+  }
+
+  @media screen and (max-width: 800px) {
+    #vcomments-box {
+      padding: 5px 0px;
+    }
+  }
+
+  #vcomments-box #vcomments {
+    background-color: #fff;
+  }
+
+  .v .vlist .vcard .vh {
+    padding-right: 20px;
+  }
+
+  .v .vlist .vcard {
+    padding-left: 10px;
+  }
+</style>
+
+ 
+   
+     
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2017-2023
+        <i class="ri-heart-fill heart_icon"></i> Jason
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>Visitors:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>Views:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/my_head-touch-icon-next.png" alt="链路漫谈"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/friends">友链</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      <a class="nav-item-link nav-item-search"  title="Search">
+        <i class="ri-search-line"></i>
+      </a>
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>谢谢打赏～</p>
+  <div class="reward-box">
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/pay_wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+ 
+    
+ 
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
