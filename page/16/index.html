@@ -113,6 +113,65 @@ var _hmt = _hmt || [];
     
     
     <article
+  id="post-blockchain/ethereum/others/Patricia树介绍"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/articles/12370dbd/"
+    >Patricia树介绍</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/articles/12370dbd/" class="article-date">
+  <time datetime="2018-04-17T05:34:47.000Z" itemprop="datePublished">2018-04-17</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/ethereum/">ethereum</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/ethereum/%E7%BB%BC%E5%90%88/">综合</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="概述">概述</h2>
+<p>小编本想在网上找一篇合适的文章来介绍这个Patricia树的，但找了半天，没发现一个合适的。尤其很多地方直接把标准的trie当成了Patricia树，这样很容易受到勿扰。<br>
+思来想去，小编打算自己大概介绍下这个树了。</p> 
+      <a class="article-more-link" href="/articles/12370dbd/"
+        >阅读更多...</a
+      >
+       
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-blockchain/ethereum/src_analysis/以太坊源码解读-第2讲-rlp模块源码解读"
   class="article article-type-post"
   itemscope
@@ -753,82 +812,6 @@ var _hmt = _hmt || [];
 </ul>
 <h2 id="呵呵">呵呵</h2>
 <p>量真大，翻译不动了。。。。。。。。。。。。。。。</p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ethereum/" rel="tag">ethereum</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/truffle/" rel="tag">truffle</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-blockchain/ethereum/truffle/official_translate/(truffle官翻)第7.1讲_合约测试"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/articles/d97bcb06/"
-    >(truffle官翻)第7.1讲 合约测试</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/articles/d97bcb06/" class="article-date">
-  <time datetime="2018-03-24T02:16:32.000Z" itemprop="datePublished">2018-03-24</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/ethereum/">ethereum</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/ethereum/truffle/">truffle</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/ethereum/truffle/%E5%AE%98%E7%BF%BB/">官翻</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <span id="more"></span>
-<h2 id="框架">框架</h2>
-<ol>
-<li>可以用两种不同的方式编写简单且容易管理的测试：
-<ol>
-<li>在JavaScript中，执行合约就像运行一个应用一样简单</li>
-<li>在Solidity 中，总之也是很方便</li>
-</ol>
-</li>
-<li>test文件是从根目录中可以找打到，Truffle只会运行.js, .es, .es6, and .jsx, and .sol这几个文件，其他会被忽略</li>
-</ol>
-<h2 id="命令">命令</h2>
-<ol>
-<li>运行 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">truffle develop  //进入环境（若已经在项目根目录下进入该环境，则不需要执行该命令）</span><br><span class="line">test  //该环境中测试</span><br></pre></td></tr></table></figure>
-</li>
-<li>也可指定路径<pre><code>test ./path/to/test/file.js
-</code></pre>
-</li>
-</ol>
-<h2 id="独立的运行环境">独立的运行环境</h2>
-<p>运行测试文件时，Truffle提供了一个独立的环境，确保每个测试不会被干扰</p>
-<h2 id="快速和可靠性">快速和可靠性</h2>
-<p>一句话翻译：测试速度老快了，而且老安全了。</p>
  
       <!-- reward -->
       

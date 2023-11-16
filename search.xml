@@ -7,6 +7,55 @@
 ]]></content>
   </entry>
   <entry>
+    <title>ubuntu22.04部署bitcoin全节点教程</title>
+    <url>/articles/a91be150/</url>
+    <content><![CDATA[<p>最近铭文不是一般的火，动不动百八十倍，想快速低成本打个有潜力的铭文，没个自己的全节点怎么能行？借此缘故，本文重新整理下部署Bitcoin全节点的过程。</p>
+<span id="more"></span>  
+<h2 id="1-环境">1. 环境</h2>
+<p>硬盘：1T左右，优先NVME。Bitcoin大概占500到600GB之间，保不准你后面还要部署闪电网络什么的，多给自己预留点空间。<br>
+内存：16GB，查询历史记录什么的，要加载完整索引，需要的内存比较大<br>
+cpu：这个目前常规cpu足够了，4核以上<br>
+带宽：常规<br>
+系统：ubuntu22.04</p>
+<h2 id="2-基本部署">2. 基本部署</h2>
+<ol>
+<li>下载btc程序最新版：<a href="https://bitcoincore.org/en/download/">bitcoin</a> 根据自己系统环境选，我这里选的<code>Linux(tgz)</code>，amd的。当前我下载后的文件名是：<code>bitcoin-25.1-x86_64-linux-gnu.tar.gz</code></li>
+<li>放在你合适的位置，我直接放<code>/root/</code>目录了，执行如下：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">解压</span></span><br><span class="line">tar -zxvf bitcoin-25.1-x86_64-linux-gnu.tar.gz</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">改文件名</span></span><br><span class="line">mv bitcoin-25.1 bitcoin</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">进入根目录</span></span><br><span class="line">cd bitcoin</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">修改配置，具体配置内容查看下文</span></span><br><span class="line">vim bitcoin.conf</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">启动节点，至此节点开始在后台自动同步了</span></span><br><span class="line">/root/bitcoin/bin/bitcoind -conf=/root/bitcoin/bitcoin.conf -daemon</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">停止节点，安全稳定的关闭节点。有说法是，不使用该命令，直接强制杀死bitcoin进程，可能导致数据异常，需要重新同步</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword stop</span><br></pre></td></tr></table></figure>
+<p>常规配置内容</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 节点数据目录</span><br><span class="line">datadir=/root/bitcoin/data/</span><br><span class="line">dbcache=4096</span><br><span class="line">txindex=1</span><br><span class="line">irc=1</span><br><span class="line">upnp=1</span><br><span class="line"># rpc连接账户</span><br><span class="line">rpcuser=username</span><br><span class="line"># rpc连接密码</span><br><span class="line">rpcpassword=password</span><br><span class="line">daemon=1</span><br><span class="line">server=1</span><br><span class="line">addressindex=1</span><br><span class="line">rest=1</span><br><span class="line">rpcbind=0.0.0.0:8332</span><br><span class="line">rpcallowip=0.0.0.0/0</span><br><span class="line"># 启用已废弃的rpc接口，这个具体咋用，还不确定</span><br><span class="line">deprecatedrpc=accounts</span><br></pre></td></tr></table></figure>
+<h2 id="3-进阶部署">3. 进阶部署</h2>
+<p>上述的<code>基本部署</code>，只是满足了最低要求的部署方式，如果想要开机自启，能够快捷使用btc的不同命令，还需要进一步操作</p>
+<ol>
+<li>环境变量配置：</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">vim ~/.bashrc</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">新增内容</span></span><br><span class="line">export BTCPATH=/root/bitcoin/bin</span><br><span class="line">export PATH=$BTCPATH:$PATH</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>supervisor安装(守护进程，用于确保btc服务开机自启，异常重启等)</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建日志目录，后续用到</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">mkdir</span> /root/bitcoin/logs/</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">安装</span></span><br><span class="line">sudo apt update &amp;&amp; sudo apt install supervisor</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">配置</span></span><br><span class="line">vim /etc/supervisor/conf.d/bitcoind.conf</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">配置内容</span></span><br><span class="line">[program:bitcoind]</span><br><span class="line">command=/root/bitcoin/bin/bitcoind -conf=/root/bitcoin/bitcoin.conf -daemon</span><br><span class="line">numprocs=1</span><br><span class="line">directory=/root/bitcoin/</span><br><span class="line">autostart=true</span><br><span class="line">autorestart=true</span><br><span class="line">stdout_logfile=/root/bitcoin/logs/bitcoind.log</span><br><span class="line">stderr_logfile=/root/bitcoin/logs/bitcoind.error.log</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">配置完毕，回到命令行环境后，执行如下：</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">更新配置</span></span><br><span class="line">sudo supervisorctl reread</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">正式生效</span></span><br><span class="line">sudo supervisorctl update</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看状态</span></span><br><span class="line">sudo systemctl status supervisor  </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">手动启动（可选）</span></span><br><span class="line">sudo supervisorctl start bitcoind</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">手动暂停（可选）</span></span><br><span class="line">sudo supervisorctl stop bitcoind</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">手动重启（可选）</span></span><br><span class="line">sudo supervisorctl restart bitcoind</span><br></pre></td></tr></table></figure>
+<p>注：这里一个问题是，直接使用<code>supervisorctl</code>停止bitcoin，会不会导致数据异常，有待考证。正常情况下，是使用<code>bitcoin-cli</code>停止节点</p>
+<h2 id="4-查看日志">4. 查看日志</h2>
+<p>目前有两个位置的日志需要留意：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">supervisor的bitcoind控制台日志</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">正常启动后的日志，里面貌似没什么有效日志，就只有一行：Bitcoin Core starting</span></span><br><span class="line">tail -f /root/bitcoin/logs/bitcoind.log</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">启动异常的日志，各种缘故导致的启动异常，在这里都能看到原因</span></span><br><span class="line">tail -f /root/bitcoin/logs/bitcoind.error.log</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">bitcoin自身的日志文件，可以看到索引同步进度，节点数据同步情况等</span></span><br><span class="line">tail -f /root/bitcoin/data/debug.log</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">可以看看数据同步多大了</span></span><br><span class="line">du -h /root/bitcoin/data/</span><br></pre></td></tr></table></figure>
+<h2 id="rpc访问">rpc访问</h2>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">账户密码要输对，输错了什么也不返回</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查询mininginfo</span> </span><br><span class="line">curl -s -X POST --user rpcUserName:rpcPassword -H &#x27;content-type: text/plain;&#x27; http://127.0.0.1:8332/ --data-binary &#x27;&#123;&quot;jsonrpc&quot;: &quot;1.0&quot;, &quot;id&quot;:&quot;curltest&quot;, &quot;method&quot;: &quot;getmininginfo&quot;, &quot;params&quot;: [] &#125;&#x27;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">可进一步过滤获取最新高度</span></span><br><span class="line">curl -s -X POST --user rpcUserName:rpcPassword -H &#x27;content-type: text/plain;&#x27; http://127.0.0.1:8332/ --data-binary &#x27;&#123;&quot;jsonrpc&quot;: &quot;1.0&quot;, &quot;id&quot;:&quot;curltest&quot;, &quot;method&quot;: &quot;getmininginfo&quot;, &quot;params&quot;: [] &#125;&#x27; |awk -F &#x27;[:,]&#x27; &#x27;&#123;print $3&#125;&#x27; </span><br></pre></td></tr></table></figure>
+<h2 id="5-常用命令">5. 常用命令</h2>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">停止bitcoin节点</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword stop</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看网络状态：</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword getnetworkinfo</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看网络节点：</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword getpeerinfo</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看区块链信息：如同步进度、</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword getblockchaininfo</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看所有命令</span></span><br><span class="line">bitcoin-cli help</span><br></pre></td></tr></table></figure>
+<h2 id="6-总结">6. 总结</h2>
+<p>本文编辑完毕</p>
+]]></content>
+      <categories>
+        <category>区块链</category>
+        <category>Bitcoin</category>
+      </categories>
+      <tags>
+        <tag>区块链</tag>
+        <tag>Bitcoin</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>linux中安装代理clash客户端</title>
     <url>/articles/6598a2e5/</url>
     <content><![CDATA[<p>某些特定场合，总需要用到代理客户端。桌面版的就不说了，网上一搜一大筐。<br>
@@ -1353,7 +1402,7 @@ GÖRLI测试网WETH9地址：<code>0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6</c
 <p>使用如下命令进行发布：</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">&lt;network-name&gt; 为指定网络的名称，如果不使用--network，则是在Hardhat Network中进行发布（内置网络，其实就知识模拟发布）</span></span><br><span class="line">npx hardhat run scripts/deploy.js --network &lt;network-name&gt;</span><br></pre></td></tr></table></figure>
 <p>当然，如果要发布在测试网或者主网，还需要在<code>hardhat.config.js</code>中进行配置，这里假设配置Goerli网：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="built_in">require</span>(<span class="string">&quot;@nomicfoundation/hardhat-toolbox&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// Go to https://www.alchemyapi.io, sign up, create</span></span><br><span class="line"><span class="comment">// a new App in its dashboard, and replace &quot;KEY&quot; with its key</span></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">INFURA_API_KEY</span> = <span class="string">&quot;KEY&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Replace this private key with your Goerli account private key</span></span><br><span class="line"><span class="comment">// To export your private key from Metamask, open Metamask and</span></span><br><span class="line"><span class="comment">// go to Account Details &gt; Export Private Key</span></span><br><span class="line"><span class="comment">// Beware: NEVER put real Ether into testing accounts</span></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">ACCOUNT_PRIVATE_KEY</span> = <span class="string">&quot;YOUR GOERLI PRIVATE KEY&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">solidity</span>: <span class="string">&quot;0.8.19&quot;</span>,</span><br><span class="line">  <span class="attr">networks</span>: &#123;</span><br><span class="line">    <span class="attr">goerli</span>: &#123;</span><br><span class="line">      <span class="attr">url</span>: <span class="string">`https://sepolia.infura.io/v3/<span class="subst">$&#123;INFURA_API_KEY&#125;</span>`</span>,</span><br><span class="line">      <span class="attr">accounts</span>: [<span class="variable constant_">ACCOUNT_PRIVATE_KEY</span>]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="built_in">require</span>(<span class="string">&quot;@nomicfoundation/hardhat-toolbox&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// Go to https://infura.io, sign up, create a new API key</span></span><br><span class="line"><span class="comment">// in its dashboard, and replace &quot;KEY&quot; with it</span></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">INFURA_API_KEY</span> = <span class="string">&quot;KEY&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Replace this private key with your Sepolia account private key</span></span><br><span class="line"><span class="comment">// To export your private key from Coinbase Wallet, go to</span></span><br><span class="line"><span class="comment">// Settings &gt; Developer Settings &gt; Show private key</span></span><br><span class="line"><span class="comment">// To export your private key from Metamask, open Metamask and</span></span><br><span class="line"><span class="comment">// go to Account Details &gt; Export Private Key</span></span><br><span class="line"><span class="comment">// Beware: NEVER put real Ether into testing accounts</span></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">SEPOLIA_PRIVATE_KEY</span> = <span class="string">&quot;YOUR SEPOLIA PRIVATE KEY&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">solidity</span>: <span class="string">&quot;0.8.19&quot;</span>,</span><br><span class="line">  <span class="attr">networks</span>: &#123;</span><br><span class="line">    <span class="attr">sepolia</span>: &#123;</span><br><span class="line">      <span class="attr">url</span>: <span class="string">`https://sepolia.infura.io/v3/<span class="subst">$&#123;INFURA_API_KEY&#125;</span>`</span>,</span><br><span class="line">      <span class="attr">accounts</span>: [<span class="variable constant_">SEPOLIA_PRIVATE_KEY</span>]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>此时可以如下发布：</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">npx hardhat run scripts/deploy.js --network sepolia</span><br></pre></td></tr></table></figure>
 <p>备注：<br>
@@ -1374,8 +1423,8 @@ sepolia获取测试币渠道：<br>
         <category>hardhat</category>
       </categories>
       <tags>
-        <tag>hardhat</tag>
         <tag>智能合约</tag>
+        <tag>hardhat</tag>
       </tags>
   </entry>
   <entry>
@@ -10678,8 +10727,8 @@ FreeAirToken: 0xd1cc0f89502c289b1d74c3d5d9ecf22d1b45d716</li>
         <category>综合</category>
       </categories>
       <tags>
-        <tag>智能合约</tag>
         <tag>ethereum</tag>
+        <tag>智能合约</tag>
       </tags>
   </entry>
   <entry>
@@ -12875,6 +12924,35 @@ destinations，目的地，可以是一个或者多个合约，如果目的地�
       </tags>
   </entry>
   <entry>
+    <title>(truffle官翻)第3讲 创建项目</title>
+    <url>/articles/39ce2b06/</url>
+    <content><![CDATA[<span id="more"></span>
+<h2 id="概述">概述</h2>
+<p>官方和社区已有项目应用地址：<a href="http://truffleframework.com/boxes/metacoin">http://truffleframework.com/boxes/metacoin</a></p>
+<h2 id="安装">安装</h2>
+<ul>
+<li>从头开始项目建立空项目
+<ol>
+<li>创建和初始化： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> testproject</span><br><span class="line"><span class="built_in">cd</span> testproject</span><br><span class="line">truffle init</span><br></pre></td></tr></table></figure>
+</li>
+<li>目录结构： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">find . -<span class="built_in">print</span> | sed -e <span class="string">&#x27;s;[^/]*/;|____;g;s;____|; |;g’ //mac环境</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>区块链</category>
+        <category>ethereum</category>
+        <category>truffle</category>
+        <category>官翻</category>
+      </categories>
+      <tags>
+        <tag>ethereum</tag>
+        <tag>truffle</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>(truffle官翻)第4讲 选择一个以太坊客户端</title>
     <url>/articles/dbe1bf88/</url>
     <content><![CDATA[<h1>第4讲_选择一个以太坊客户端</h1>
@@ -12919,35 +12997,6 @@ destinations，目的地，可以是一个或者多个合约，如果目的地�
 <li>Ganache 命令行<br>
 略，小编用第二种方式就够了</li>
 </ol>
-]]></content>
-      <categories>
-        <category>区块链</category>
-        <category>ethereum</category>
-        <category>truffle</category>
-        <category>官翻</category>
-      </categories>
-      <tags>
-        <tag>ethereum</tag>
-        <tag>truffle</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>(truffle官翻)第3讲 创建项目</title>
-    <url>/articles/39ce2b06/</url>
-    <content><![CDATA[<span id="more"></span>
-<h2 id="概述">概述</h2>
-<p>官方和社区已有项目应用地址：<a href="http://truffleframework.com/boxes/metacoin">http://truffleframework.com/boxes/metacoin</a></p>
-<h2 id="安装">安装</h2>
-<ul>
-<li>从头开始项目建立空项目
-<ol>
-<li>创建和初始化： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> testproject</span><br><span class="line"><span class="built_in">cd</span> testproject</span><br><span class="line">truffle init</span><br></pre></td></tr></table></figure>
-</li>
-<li>目录结构： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">find . -<span class="built_in">print</span> | sed -e <span class="string">&#x27;s;[^/]*/;|____;g;s;____|; |;g’ //mac环境</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-</li>
-</ul>
 ]]></content>
       <categories>
         <category>区块链</category>

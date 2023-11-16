@@ -13,7 +13,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>linux中安装代理clash客户端 |  链路漫谈</title>
+      <title>ubuntu22.04部署bitcoin全节点教程 |  链路漫谈</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/images/my_head-16x16-next.ico" />
@@ -65,7 +65,7 @@ var _hmt = _hmt || [];
     <main class="content on">
       <section class="outer">
   <article
-  id="post-common/linux中安装代理clash客户端"
+  id="post-blockchain/bitcoin/bitcoin全节点部署教程"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -76,7 +76,7 @@ var _hmt = _hmt || [];
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  linux中安装代理clash客户端
+  ubuntu22.04部署bitcoin全节点教程
 </h1>
  
 
@@ -84,11 +84,11 @@ var _hmt = _hmt || [];
     </header>
      
     <div class="article-meta">
-      <a href="/articles/6598a2e5/" class="article-date">
-  <time datetime="2023-09-24T15:48:19.000Z" itemprop="datePublished">2023-09-24</time>
+      <a href="/articles/a91be150/" class="article-date">
+  <time datetime="2023-11-16T01:53:00.000Z" itemprop="datePublished">2023-11-16</time>
 </a> 
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E9%80%9A%E7%94%A8%E6%8A%80%E8%83%BD/">通用技能</a>
+    <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/">区块链</a> / <a class="article-category-link" href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/Bitcoin/">Bitcoin</a>
   </div>
   
 <div class="word_count">
@@ -96,7 +96,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> Word count:</span>
-            <span class="post-count">450</span>
+            <span class="post-count">1.1k</span>
         </span>
     </span>
 
@@ -105,7 +105,7 @@ var _hmt = _hmt || [];
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> Reading time≈</span>
-            <span class="post-count">1 min</span>
+            <span class="post-count">4 min</span>
         </span>
     </span>
 </div>
@@ -120,42 +120,42 @@ var _hmt = _hmt || [];
   
     <div class="article-entry" itemprop="articleBody">
        
-  <p>某些特定场合，总需要用到代理客户端。桌面版的就不说了，网上一搜一大筐。<br>
-本文只针对linux命令行环境下，安装代理客户端</p>
-<span id="more"></span>
-<h2 id="环境">环境</h2>
+  <p>最近铭文不是一般的火，动不动百八十倍，想快速低成本打个有潜力的铭文，没个自己的全节点怎么能行？借此缘故，本文重新整理下部署Bitcoin全节点的过程。</p>
+<span id="more"></span>  
+<h2 id="1-环境">1. 环境</h2>
+<p>硬盘：1T左右，优先NVME。Bitcoin大概占500到600GB之间，保不准你后面还要部署闪电网络什么的，多给自己预留点空间。<br>
+内存：16GB，查询历史记录什么的，要加载完整索引，需要的内存比较大<br>
+cpu：这个目前常规cpu足够了，4核以上<br>
+带宽：常规<br>
+系统：ubuntu22.04</p>
+<h2 id="2-基本部署">2. 基本部署</h2>
 <ol>
-<li>操作系统： ubuntu 22.04 命令行版(server版)</li>
-<li>docker docker-compose (强烈建议在容器中部署)</li>
-<li>代理客户端：<a target="_blank" rel="noopener" href="https://github.com/Dreamacro/clash/releases">clash</a> (自行根据需要下载)</li>
+<li>下载btc程序最新版：<a target="_blank" rel="noopener" href="https://bitcoincore.org/en/download/">bitcoin</a> 根据自己系统环境选，我这里选的<code>Linux(tgz)</code>，amd的。当前我下载后的文件名是：<code>bitcoin-25.1-x86_64-linux-gnu.tar.gz</code></li>
+<li>放在你合适的位置，我直接放<code>/root/</code>目录了，执行如下：</li>
 </ol>
-<h2 id="步骤">步骤</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">解压</span></span><br><span class="line">tar -zxvf bitcoin-25.1-x86_64-linux-gnu.tar.gz</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">改文件名</span></span><br><span class="line">mv bitcoin-25.1 bitcoin</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">进入根目录</span></span><br><span class="line">cd bitcoin</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">修改配置，具体配置内容查看下文</span></span><br><span class="line">vim bitcoin.conf</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">启动节点，至此节点开始在后台自动同步了</span></span><br><span class="line">/root/bitcoin/bin/bitcoind -conf=/root/bitcoin/bitcoin.conf -daemon</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">停止节点，安全稳定的关闭节点。有说法是，不使用该命令，直接强制杀死bitcoin进程，可能导致数据异常，需要重新同步</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword stop</span><br></pre></td></tr></table></figure>
+<p>常规配置内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># 节点数据目录</span><br><span class="line">datadir=/root/bitcoin/data/</span><br><span class="line">dbcache=4096</span><br><span class="line">txindex=1</span><br><span class="line">irc=1</span><br><span class="line">upnp=1</span><br><span class="line"># rpc连接账户</span><br><span class="line">rpcuser=username</span><br><span class="line"># rpc连接密码</span><br><span class="line">rpcpassword=password</span><br><span class="line">daemon=1</span><br><span class="line">server=1</span><br><span class="line">addressindex=1</span><br><span class="line">rest=1</span><br><span class="line">rpcbind=0.0.0.0:8332</span><br><span class="line">rpcallowip=0.0.0.0/0</span><br><span class="line"># 启用已废弃的rpc接口，这个具体咋用，还不确定</span><br><span class="line">deprecatedrpc=accounts</span><br></pre></td></tr></table></figure>
+<h2 id="3-进阶部署">3. 进阶部署</h2>
+<p>上述的<code>基本部署</code>，只是满足了最低要求的部署方式，如果想要开机自启，能够快捷使用btc的不同命令，还需要进一步操作</p>
 <ol>
-<li>首先，需要一个配置文件，文件名称叫做<code>config.yaml</code>，具体该文件怎么来，自行解决，这里有很多代理信息。官方有个可以参考的示例配置：<a target="_blank" rel="noopener" href="https://dreamacro.github.io/clash/configuration/configuration-reference.html">config.yaml</a>，仅供参考</li>
-<li><code>docker-compose.yaml</code>内容：</li>
+<li>环境变量配置：</li>
 </ol>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">clash:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">ghcr.io/dreamacro/clash</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">clash</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./config.yaml:/root/.config/clash/config.yaml:ro</span></span><br><span class="line">      <span class="comment"># - ./ui:/ui:ro # dashboard volume</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;7890:7890&quot;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;9090:9090&quot;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;7891:7891&quot;</span></span><br><span class="line">    <span class="attr">network_mode:</span> <span class="string">&quot;bridge&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">ui:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">haishanh/yacd:master</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">clashui</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;81:80&quot;</span></span><br><span class="line">    <span class="attr">network_mode:</span> <span class="string">&quot;bridge&quot;</span></span><br></pre></td></tr></table></figure>
-<p>其中，<code>clash</code>是代理执行程序，而<code>ui</code>是前端页面，用于可视化管理代理。<br>
-<code>clash</code>的端口解释：<br>
-7890：http代理端口，你需要用代理的程序，需要通过它来转发<br>
-7891：socket代理端口，你需要用代理的程序，需要通过它来转发<br>
-9090：clash的api接口，用于方便ui的调用</p>
-<ol start="3">
-<li>启动</li>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.bashrc</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">新增内容</span></span><br><span class="line">export BTCPATH=/root/bitcoin/bin</span><br><span class="line">export PATH=$BTCPATH:$PATH</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>supervisor安装(守护进程，用于确保btc服务开机自启，异常重启等)</li>
 </ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker-compose up -d</span><br></pre></td></tr></table></figure>
-<ol start="4">
-<li>
-<p>浏览器打开ui管理页面<br>
-为确保安全，<code>config.yaml</code>中，有一项可以配置密码，远程打开页面时候，可以通过输入密码，来管理你的代理，打开后，根据需要自行配置</p>
-</li>
-<li>
-<p>调用<br>
-假设，你需要用到代理的程序和你部署的代理服务是在同一个ubuntu系统中，那可以这样：</p>
-</li>
-</ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export https_proxy=127.0.0.1:7890</span><br></pre></td></tr></table></figure>
-<p>然后就能成功在当前窗口调用了。具体怎么用，你根据自己实际情况来决定</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建日志目录，后续用到</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">mkdir</span> /root/bitcoin/logs/</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">安装</span></span><br><span class="line">sudo apt update &amp;&amp; sudo apt install supervisor</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">配置</span></span><br><span class="line">vim /etc/supervisor/conf.d/bitcoind.conf</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">配置内容</span></span><br><span class="line">[program:bitcoind]</span><br><span class="line">command=/root/bitcoin/bin/bitcoind -conf=/root/bitcoin/bitcoin.conf -daemon</span><br><span class="line">numprocs=1</span><br><span class="line">directory=/root/bitcoin/</span><br><span class="line">autostart=true</span><br><span class="line">autorestart=true</span><br><span class="line">stdout_logfile=/root/bitcoin/logs/bitcoind.log</span><br><span class="line">stderr_logfile=/root/bitcoin/logs/bitcoind.error.log</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">配置完毕，回到命令行环境后，执行如下：</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">更新配置</span></span><br><span class="line">sudo supervisorctl reread</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">正式生效</span></span><br><span class="line">sudo supervisorctl update</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看状态</span></span><br><span class="line">sudo systemctl status supervisor  </span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">手动启动（可选）</span></span><br><span class="line">sudo supervisorctl start bitcoind</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">手动暂停（可选）</span></span><br><span class="line">sudo supervisorctl stop bitcoind</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">手动重启（可选）</span></span><br><span class="line">sudo supervisorctl restart bitcoind</span><br></pre></td></tr></table></figure>
+<p>注：这里一个问题是，直接使用<code>supervisorctl</code>停止bitcoin，会不会导致数据异常，有待考证。正常情况下，是使用<code>bitcoin-cli</code>停止节点</p>
+<h2 id="4-查看日志">4. 查看日志</h2>
+<p>目前有两个位置的日志需要留意：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">supervisor的bitcoind控制台日志</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">正常启动后的日志，里面貌似没什么有效日志，就只有一行：Bitcoin Core starting</span></span><br><span class="line">tail -f /root/bitcoin/logs/bitcoind.log</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">启动异常的日志，各种缘故导致的启动异常，在这里都能看到原因</span></span><br><span class="line">tail -f /root/bitcoin/logs/bitcoind.error.log</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">bitcoin自身的日志文件，可以看到索引同步进度，节点数据同步情况等</span></span><br><span class="line">tail -f /root/bitcoin/data/debug.log</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">可以看看数据同步多大了</span></span><br><span class="line">du -h /root/bitcoin/data/</span><br></pre></td></tr></table></figure>
+<h2 id="rpc访问">rpc访问</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">账户密码要输对，输错了什么也不返回</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查询mininginfo</span> </span><br><span class="line">curl -s -X POST --user rpcUserName:rpcPassword -H &#x27;content-type: text/plain;&#x27; http://127.0.0.1:8332/ --data-binary &#x27;&#123;&quot;jsonrpc&quot;: &quot;1.0&quot;, &quot;id&quot;:&quot;curltest&quot;, &quot;method&quot;: &quot;getmininginfo&quot;, &quot;params&quot;: [] &#125;&#x27;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">可进一步过滤获取最新高度</span></span><br><span class="line">curl -s -X POST --user rpcUserName:rpcPassword -H &#x27;content-type: text/plain;&#x27; http://127.0.0.1:8332/ --data-binary &#x27;&#123;&quot;jsonrpc&quot;: &quot;1.0&quot;, &quot;id&quot;:&quot;curltest&quot;, &quot;method&quot;: &quot;getmininginfo&quot;, &quot;params&quot;: [] &#125;&#x27; |awk -F &#x27;[:,]&#x27; &#x27;&#123;print $3&#125;&#x27; </span><br></pre></td></tr></table></figure>
+<h2 id="5-常用命令">5. 常用命令</h2>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">停止bitcoin节点</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword stop</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看网络状态：</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword getnetworkinfo</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看网络节点：</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword getpeerinfo</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看区块链信息：如同步进度、</span></span><br><span class="line">bitcoin-cli rpcuser=rpcuser -rpcpassword=rpcpassword getblockchaininfo</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看所有命令</span></span><br><span class="line">bitcoin-cli help</span><br></pre></td></tr></table></figure>
+<h2 id="6-总结">6. 总结</h2>
+<p>本文编辑完毕</p>
  
       <!-- reward -->
       
@@ -226,12 +226,12 @@ var _hmt = _hmt || [];
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/6598a2e5/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://www.bitxx.top/articles/a91be150/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>  
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%80%9A%E7%94%A8%E6%8A%80%E8%83%BD/" rel="tag">通用技能</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Bitcoin/" rel="tag">Bitcoin</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" rel="tag">区块链</a></li></ul>
 
     </footer>
   </div>
@@ -239,19 +239,10 @@ var _hmt = _hmt || [];
    
   <nav class="article-nav">
     
-      <a href="/articles/a91be150/" class="article-nav-link">
-        <strong class="article-nav-caption">上一篇</strong>
-        <div class="article-nav-title">
-          
-            ubuntu22.04部署bitcoin全节点教程
-          
-        </div>
-      </a>
     
-    
-      <a href="/articles/c1eac28e/" class="article-nav-link">
+      <a href="/articles/6598a2e5/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">spacemesh标准部署教程</div>
+        <div class="article-nav-title">linux中安装代理clash客户端</div>
       </a>
     
   </nav>
